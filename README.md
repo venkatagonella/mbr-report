@@ -27,13 +27,6 @@ git clone https://github.com/venkatagonella/mbr-report.git .cursor/skills/mbr-re
 
 Restart Cursor or start a new agent chat after installing. Trigger by asking for an **MBR**, **WBR**, or **business review deck**.
 
-### Cursor Origin (Phenom team)
-
-Internal copy for teammates on Cursor Origin:
-
-- https://cursor.com/codebase/phenom-chatbot/mbr-report
-- Clone: `https://origin.cursor.com/phenom-chatbot/mbr-report.git`
-
 ## What’s inside
 
 | Path | Role |

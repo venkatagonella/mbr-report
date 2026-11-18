@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WBR / MBR Report Shell</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Poppins',sans-serif;-webkit-font-smoothing:antialiased;background:#F1F5F9;display:flex;height:100vh;overflow:hidden;color:#353B46;font-size:13px}
+
+/* ── SIDEBAR ── */
+#sidebar{width:260px;background:white;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+#sidebar-brand{padding:20px 20px 16px;border-bottom:1px solid #e2e8f0}
+.brand-tag{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#7c3aed}
+.brand-title{font-size:14px;font-weight:600;color:#27282C;margin-top:4px;letter-spacing:0.1px}
+.brand-sub{font-size:11px;color:#7A818C;margin-top:2px}
+.brand-proto{display:inline-block;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:8px;margin-top:8px}
+#slide-nav{flex:1;overflow-y:auto;padding:8px 0 20px}
+#slide-nav::-webkit-scrollbar{width:3px}
+#slide-nav::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:2px}
+.nav-section-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#7A818C;padding:16px 16px 6px}
+.nav-item{display:flex;align-items:flex-start;gap:10px;padding:7px 12px;margin:1px 8px;border-radius:10px;cursor:pointer;transition:all 0.15s;color:#464F5E;font-size:12px;font-weight:500;line-height:1.4}
+.nav-item:hover{background:#F1F5F9;color:#27282C}
+.nav-item.active{background:#F1F5F9;color:#7c3aed}
+.nav-num{width:20px;height:20px;border-radius:8px;background:#F4F6FA;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#7A818C;margin-top:1px}
+.nav-item.active .nav-num{background:#7c3aed;color:white}
+.nav-gap-dot{width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0;margin-top:6px;margin-left:auto}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;margin:12px 12px 12px 0;background:white;border-radius:16px;border:1px solid #e2e8f0}
+#topbar{border-bottom:1px solid #e2e8f0;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px}
+#topbar-info{min-width:0;flex:1}
+.topbar-section{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:#7A818C}
+.topbar-title{font-size:15px;font-weight:600;color:#27282C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;letter-spacing:0.1px}
+#topbar-nav{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.slide-counter{font-size:12px;font-weight:500;color:#7A818C;min-width:52px;text-align:center}
+.nbtn{padding:6px 16px;border-radius:10px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #e2e8f0;background:white;color:#353B46;transition:all 0.15s;font-family:'Poppins',sans-serif;letter-spacing:0.2px}
+.nbtn:hover:not(:disabled){background:#F1F5F9;border-color:#cbd5e1}
+.nbtn:disabled{opacity:0.3;cursor:not-allowed}
+.nbtn.primary{background:#27282C;color:white;border-color:#27282C}
+.nbtn.primary:hover:not(:disabled){background:#353B46}
+
+/* ── SLIDE BODY ── */
+#slide-body{flex:1;overflow-y:auto;padding:28px 32px 40px;position:relative}
+#slide-body::-webkit-scrollbar{width:4px}
+#slide-body::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:2px}
+
+.slide-meta{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 12px;border-radius:8px;font-size:11px;font-weight:600;letter-spacing:0.2px}
+.badge-section{background:#F4F6FA;color:#464F5E}
+.badge-gap{background:#FEF3C7;color:#92400E}
+.badge-new{background:#ECFDF5;color:#065F46}
+.badge-old{background:#F1F5F9;color:#94A3B8;border:1px solid #e2e8f0}
+.badge-phase2{background:#EDE9FE;color:#6D28D9;border:1px solid #c4b5fd}
+.nav-phase2-dot{width:6px;height:6px;border-radius:50%;background:#7c3aed;flex-shrink:0;margin-top:6px;margin-left:4px}
+
+.slide-question{font-size:13px;color:#464F5E;margin-bottom:20px;font-style:italic;line-height:1.6;border-left:3px solid #e2e8f0;padding-left:14px}
+
+/* ── CHART CARD ── */
+.card{background:white;border:1px solid #e2e8f0;border-radius:16px;margin-bottom:20px;overflow:hidden}
+.card-header{padding:16px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding-right:100px}
+.card-title{font-size:13px;font-weight:600;color:#27282C;letter-spacing:0.1px}
+.card-goal{font-size:11px;font-weight:500;color:#7A818C;background:#F4F6FA;padding:3px 10px;border-radius:8px;white-space:nowrap}
+.card-body{padding:12px 20px 20px}
+.chart-wrap{position:relative}
+.chart-wrap canvas{max-height:240px}
+
+/* ── LEGEND ── */
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid #F1F5F9}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:#7A818C}
+.ll{width:24px;height:2.5px;border-radius:1px}
+
+/* ── TABLE ── */
+.tcard{background:white;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;margin-bottom:20px}
+.tcard-head{padding:14px 20px 10px;padding-right:100px;border-bottom:1px solid #F1F5F9;display:flex;justify-content:space-between;align-items:center}
+.tcard-title{font-size:12px;font-weight:600;color:#27282C;letter-spacing:0.1px}
+.tcard-note{font-size:11px;font-weight:500;color:#7A818C}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:#F4F6FA;color:#7A818C;font-weight:600;padding:8px 12px;text-align:right;border-bottom:1px solid #e2e8f0;white-space:nowrap;font-size:11px}
+.tbl th:first-child{text-align:left;min-width:190px}
+.tbl td{padding:7px 12px;text-align:right;border-bottom:1px solid #F4F6FA;color:#353B46;font-weight:500}
+.tbl td:first-child{text-align:left;font-weight:500;color:#27282C}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .hl td{background:#F4F6FA;font-weight:600;color:#27282C}
+.tbl .hl td:first-child{color:#27282C}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}
+.tbl-wrap .tbl{min-width:920px}
+.ph{color:#cbd5e1 !important;font-weight:400 !important}
+
+/* ── JTBD BARS ── */
+.jtbd-wrap{padding:8px 0}
+.jtbd-row{display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid #F4F6FA}
+.jtbd-row:last-child{border-bottom:none}
+.jtbd-label{width:200px;font-size:12px;font-weight:600;color:#353B46;flex-shrink:0}
+.jtbd-bar-outer{flex:1;height:10px;background:#F1F5F9;border-radius:5px;overflow:visible;position:relative}
+.jtbd-bar{height:10px;border-radius:5px}
+.jtbd-goal-line{position:absolute;top:-4px;bottom:-4px;width:2px;background:#7A818C;border-radius:1px}
+.jtbd-goal-line::after{content:attr(data-label);position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:500;color:#7A818C;white-space:nowrap}
+.jtbd-pct{width:40px;font-size:12px;font-weight:600;text-align:right;flex-shrink:0}
+
+/* ── TWO-COL ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* ── NOTES ── */
+.note-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:12px 16px;font-size:12px;font-weight:500;color:#92400E;line-height:1.55;margin-bottom:20px}
+
+/* ── PROTO BANNER ── */
+#proto-banner{background:#F4F6FA;color:#7A818C;font-size:11px;font-weight:500;text-align:center;padding:6px;border-bottom:1px solid #e2e8f0;flex-shrink:0}
+
+
+/* ── DECK SWITCHER ── */
+#deck-switcher{padding:10px 12px 12px;border-bottom:1px solid #e2e8f0;position:relative}
+#deck-select-wrap{position:relative;display:flex;align-items:center}
+#deck-select-wrap::after{content:'▾';position:absolute;right:10px;font-size:11px;color:#7A818C;pointer-events:none;line-height:1}
+#deck-select{width:100%;padding:7px 28px 7px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid #e2e8f0;background:white;color:#27282C;font-family:'Poppins',sans-serif;letter-spacing:0.1px;appearance:none;-webkit-appearance:none;outline:none;transition:border-color 0.15s}
+#deck-select:hover{border-color:#cbd5e1}
+#deck-select:focus{border-color:#7c3aed}
+
+/* ── AE EXEC SUMMARY ── */
+.exec-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.exec-card{background:white;border:1px solid #e2e8f0;border-radius:16px;padding:20px 24px}
+.exec-card-title{font-size:11px;font-weight:600;color:#7A818C;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px}
+.exec-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.exec-row:last-child{margin-bottom:0}
+.exec-row-label{font-size:12px;font-weight:500;color:#464F5E}
+.exec-row-vals{display:flex;align-items:baseline;gap:8px}
+.exec-val{font-size:15px;font-weight:700;color:#27282C}
+.exec-val-large{font-size:28px;font-weight:700;color:#27282C;margin:6px 0 4px}
+.exec-delta{font-size:11px;font-weight:600}
+.exec-delta-label{font-size:12px;font-weight:500;color:#464F5E;margin-bottom:4px}
+.exec-up{color:#10b981}.exec-down{color:#ef4444}.exec-neutral{color:#7A818C}
+.exec-single-card{display:flex;flex-direction:column}
+
+/* ── AE THREE-BLOCKS (HLR) ── */
+.three-blocks{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+.block-card{border:1px solid;border-radius:16px;padding:20px}
+.block-card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;margin-bottom:14px}
+.block-bullets{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.block-bullets li{font-size:12px;font-weight:500;color:#353B46;line-height:1.55;padding-left:14px;position:relative}
+.block-bullets li::before{content:'·';position:absolute;left:0;color:#7A818C;font-weight:900;font-size:16px;line-height:1}
+
+/* ── SECTION COMMENTS ── */
+.section-wrap{position:relative;margin-bottom:4px}
+.section-wrap>.card,.section-wrap>.tcard{margin-bottom:0}
+.section-comment-pill{position:absolute;top:8px;right:8px;z-index:5;display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:8px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid #e2e8f0;background:white;color:#7A818C;transition:all 0.15s;font-family:'Poppins',sans-serif;letter-spacing:0.2px}
+.section-comment-pill:hover{background:#F4F6FA;color:#7c3aed;border-color:#7c3aed}
+.section-comment-pill.has-comments{background:#F4F6FA;color:#7c3aed;border-color:#ddd6fe}
+.section-comment-pill .pill-icon{font-size:12px;line-height:1}
+.section-thread{border:1px solid #e2e8f0;border-top:none;border-radius:0 0 16px 16px;background:#FAFBFC;padding:14px 16px 16px;margin-top:-4px;margin-bottom:20px;display:none}
+.section-thread.open{display:block}
+.section-thread-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#7A818C;margin-bottom:10px}
+.thread-item{background:white;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;margin-bottom:8px}
+.thread-item-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.thread-author{font-size:11px;font-weight:600;color:#27282C}
+.thread-time{font-size:10px;color:#7A818C}
+.thread-text{font-size:12px;color:#464F5E;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.thread-empty{font-size:11px;color:#7A818C;font-style:italic;margin-bottom:10px}
+.thread-item-actions{margin-top:6px;display:flex;justify-content:flex-end}
+.resolve-btn{background:none;border:1px solid #e2e8f0;border-radius:6px;padding:2px 10px;font-family:'Poppins',sans-serif;font-size:10px;font-weight:500;color:#7A818C;cursor:pointer;transition:all 0.15s}
+.resolve-btn:hover{background:#ECFDF5;color:#065F46;border-color:#a7f3d0}
+.thread-toggle-resolved{background:none;border:none;font-family:'Poppins',sans-serif;font-size:10px;font-weight:500;color:#7A818C;cursor:pointer;padding:0;margin-bottom:10px;text-decoration:underline;text-underline-offset:2px}
+.thread-toggle-resolved:hover{color:#7c3aed}
+.thread-form{display:flex;gap:8px;align-items:flex-start}
+.thread-form input{width:120px;flex-shrink:0;padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:11px;color:#353B46;outline:none;background:white}
+.thread-form textarea{flex:1;padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:11px;color:#353B46;outline:none;resize:none;height:34px;background:white;min-width:0}
+.thread-form input:focus,.thread-form textarea:focus{border-color:#7c3aed}
+.thread-form button{padding:7px 14px;border-radius:8px;background:#7c3aed;color:white;border:none;font-family:'Poppins',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:background 0.15s;flex-shrink:0;white-space:nowrap}
+.thread-form button:hover:not(:disabled){background:#6d28d9}
+.thread-form button:disabled{opacity:0.4;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div id="sidebar-brand">
+    <div class="brand-tag">Phenom · WBR</div>
+    <div class="brand-title">Weekly Business Review</div>
+    <div class="brand-sub">RX · Automation Engine</div>
+    <div class="brand-proto">Prototype — Simulated Data</div>
+  </div>
+  <div id="deck-switcher">
+    <div id="deck-select-wrap">
+      <select id="deck-select" onchange="switchDeck(this.value)">
+        <option value="rx">RX — Recruiter Experience</option>
+        <option value="ae">Automation Platform</option>
+      </select>
+    </div>
+  </div>
+  <div id="slide-nav"></div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="proto-banner">Prototype — All data is simulated for illustration. Goals and breakdowns are placeholders pending data sourcing.</div>
+  <div id="topbar">
+    <div id="topbar-info">
+      <div class="topbar-section" id="tb-section">-</div>
+      <div class="topbar-title" id="tb-title">-</div>
+    </div>
+    <div id="topbar-nav">
+      <button class="nbtn" id="btn-prev" onclick="navigate(-1)">Prev</button>
+      <span class="slide-counter" id="slide-counter">1 / 19</span>
+      <button class="nbtn primary" id="btn-next" onclick="navigate(1)">Next</button>
+    </div>
+  </div>
+  <div id="slide-body"></div>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+Chart.defaults.font.family = "'Poppins', sans-serif";
+
+let activeDeck = 'rx';
+function deckSlides() { return SLIDES.filter(s => s.deck === activeDeck); }
+function globalSlideId() { return activeDeck === 'rx' ? currentIdx : 100 + currentIdx; }
+
+function switchDeck(deck) {
+  if (deck === activeDeck) return;
+  activeDeck = deck;
+  const sel = document.getElementById('deck-select');
+  if (sel) sel.value = deck;
+  currentIdx = 0;
+  if (activeChart) { activeChart.destroy(); activeChart = null; }
+  buildNav();
+  render();
+  if (sb) { subscribeToSlide(globalSlideId()); loadAllSectionCounts(); }
+}
+Chart.defaults.plugins.legend.display = false;
+Chart.defaults.plugins.datalabels.display = false;
+
+const MONTHS = ['Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan'];
+const MONTH_IDX = [0,1,2,3,4,5,6,7,8,9,10,11];
+
+function fmtTableVal(v, fmt) {
+  if (v == null || v === '') return '-';
+  if (fmt === '%') return (typeof v === 'number' && v % 1 !== 0 ? v.toFixed(1) : v) + '%';
+  return String(v) + (fmt || '');
+}
+
+const C = {
+  heading: '#27282C',
+  body: '#353B46',
+  secondary: '#464F5E',
+  muted: '#7A818C',
+  accent: '#7c3aed',
+  border: '#e2e8f0',
+  bg: '#F1F5F9',
+  widget: '#F4F6FA',
+  currentYear: '#27282C',
+  previousYear: '#cbd5e1',
+  goal: 'rgba(124,58,237,0.35)',
+  emerald: '#10b981',
+  amber: '#f59e0b',
+  red: '#ef4444',
+  sky: '#0ea5e9',
+};
+
+// ─────────────────────────────────────────────────────────────
+// SLIDE DATA (Feb-Jan fiscal year)
+// ─────────────────────────────────────────────────────────────
+const SLIDES = [
+  // ── SECTION 1 ──────────────────────────────────────────────
+  {
+    id:1, section:'Section 1 — Customer & User Health', sectionShort:'Customer & User Health',
+    title:'Customer Base — Account Lifecycle',
+    question:'How many customers are truly live, and are we growing or shrinking?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Active Rate (%)', goalValue:90, goalLabel:'Goal: 90%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[62,63,64,63,65,66,64,67,65,68,67,69]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[52,53,54,53,55,56,54,57,55,58,57,59]},
+    tableRows:[
+      {label:'Total accounts',highlight:false,data:[532,534,535,536,537,538,539,540,541,542,543,544]},
+      {label:'Live accounts',highlight:false,data:[428,429,431,430,432,433,435,434,436,435,437,438]},
+      {label:'Act. Impl. (upsell)',highlight:false,data:[11,12,11,13,12,11,12,11,12,11,11,12]},
+      {label:'Act. Impl. (new)',highlight:false,data:[31,30,32,31,32,31,31,32,30,33,32,31]},
+      {label:'Go-lives this period',highlight:false,data:[5,4,6,4,5,5,6,4,5,6,4,5]},
+      {label:'Churn this period',highlight:false,data:[2,3,2,2,3,2,2,3,2,2,3,2]},
+      {label:'Net change',highlight:false,data:[3,1,4,2,2,3,4,1,3,4,1,3]},
+      {label:'Active accounts',highlight:false,data:[266,270,276,271,281,286,278,291,283,296,293,302]},
+      {label:'Active rate (%)',highlight:true,data:[62,63,64,63,65,66,64,67,65,68,67,69],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'Active rate by customer integration type',
+      note:'Same definition as chart — active live accounts ÷ live accounts · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'2-way hiring status integration',highlight:false,data:[71,72,73,72,74,75,73,76,74,77,76,78],fmt:'%'},
+        {label:'1-way hiring status integration',highlight:false,data:[52,53,54,53,55,56,54,57,55,58,57,59],fmt:'%'},
+        {label:'Phenom Hire',highlight:false,data:[64,65,66,65,67,68,66,69,67,70,69,71],fmt:'%'},
+      ],
+    },
+    notes:'DATA GAP: Live account identification is currently manual (spreadsheet). Automating via Snowflake (Salesforce + GPS) is a P0 dependency. Implementation customers are currently included in the denominator, artificially deflating the rate.',
+  },
+  {
+    id:2, section:'Section 1 — Customer & User Health', sectionShort:'Customer & User Health',
+    title:'Customer Base — First-90-Day Adoption',
+    question:'Of recently launched customers, how many are actually adopting within 90 days?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'30-Day Activation Rate (%)', goalValue:90, goalLabel:'Goal: 90%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[71,72,70,74,73,72,71,73,72,74,73,72]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[63,64,62,66,65,64,63,65,64,66,65,64]},
+    tableRows:[
+      {label:'Accounts gone live',highlight:false,data:[7,8,6,9,8,7,8,9,7,8,8,9]},
+      {label:'Active within 30 days',highlight:true,data:[71,72,70,74,73,72,71,73,72,74,73,72],fmt:'%'},
+      {label:'Active within 60 days',highlight:false,data:[84,85,83,87,86,85,84,86,85,87,86,85],fmt:'%'},
+      {label:'Active within 90 days',highlight:false,data:[89,90,88,92,91,90,89,91,90,92,91,90],fmt:'%'},
+      {label:'Failed to launch (>90d)',highlight:false,data:[2,1,2,1,2,1,2,1,2,1,2,1]},
+    ],
+    notes:'Chart: % of accounts that went live in each fiscal month who met 30-day activation (same definition YoY). Table: 30/60/90 and failed launches for Hypercare. ~20 recent accounts show zero active-job activity.',
+  },
+  {
+    id:3, section:'Section 1 — Customer & User Health', sectionShort:'Customer & User Health',
+    title:'Recruiters — True CRM Coverage',
+    question:'Of recruiters assigned on the hiring team, how many are actually using the CRM in a meaningful way?',
+    gap:true, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Recruiter True Engagement Rate (%)', goalValue:70, goalLabel:'Goal: 70%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[50,53,55,54,56,57,58,57,58,59,60,61]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[42,44,46,45,47,48,49,48,49,50,51,52]},
+    tableTitle:'Recruiter funnel — assigned → active → engaged',
+    tableRows:[
+      {label:'Recruiters w/ job assignments (hiring team)',highlight:false,data:[11800,11880,11950,12020,12100,12180,12250,12320,12400,12480,12550,12620]},
+      {label:'Active recruiters (logged in to CRM)',highlight:false,data:[7024,7407,7733,7548,7879,7980,8167,8071,8173,8367,8557,8649]},
+      {label:'Login rate (active / assigned)',highlight:false,data:[60,62,65,63,65,66,67,66,66,67,68,69],fmt:'%'},
+      {label:'Engaged recruiters (critical CRM actions)',highlight:false,data:[5900,6296,6573,6491,6776,6943,7105,7022,7192,7363,7530,7698]},
+      {label:'Engagement rate (engaged / active)',highlight:false,data:[84,85,85,86,86,87,87,87,88,88,88,89],fmt:'%'},
+      {label:'True engagement (engaged / assigned)',highlight:true,data:[50,53,55,54,56,57,58,57,58,59,60,61],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'True engagement by customer integration type',
+      note:'Same definition as chart — % of assigned recruiters who are engaged · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'2-way hiring status integration',highlight:false,data:[58,60,61,60,62,63,64,63,64,65,66,67],fmt:'%'},
+        {label:'1-way hiring status integration',highlight:false,data:[42,43,44,44,45,46,46,45,46,47,48,48],fmt:'%'},
+        {label:'Phenom Hire',highlight:false,data:[52,54,55,54,56,57,58,57,58,59,60,61],fmt:'%'},
+      ],
+    },
+    notes:'DATA GAP: Denominator (recruiters assigned on hiring teams with job-linked work) requires hiring-team + role data in Snowflake. "Engaged" = critical CRM actions in-period. Legacy views that use engaged ÷ active only (~85–90%) omit non-logged-in recruiters and overstate health.',
+  },
+  {
+    id:4, section:'Section 1 — Customer & User Health', sectionShort:'Customer & User Health',
+    title:'Pipeline Stages — Account vs Job Coverage',
+    question:'Where do live accounts and active jobs show CRM activity across the hiring journey?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Live accounts — 4+ pipeline stages with CRM activity (%)', goalValue:40, goalLabel:'Goal: 40%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[31,32,32,33,33,34,34,35,35,36,36,37]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[24,25,25,26,26,27,27,28,28,29,29,30]},
+    tableTitle:'Account lens — % of live accounts with CRM activity in stage',
+    tableRows:[
+      {label:'Req & Intake',highlight:false,data:[87,88,88,89,89,90,90,91,90,91,92,92],fmt:'%'},
+      {label:'Sourcing',highlight:true,data:[62,63,64,64,65,65,66,66,67,67,68,68],fmt:'%'},
+      {label:'Candidate engagement',highlight:false,data:[44,45,45,46,47,47,48,48,49,50,50,51],fmt:'%'},
+      {label:'Screening & Assessment',highlight:false,data:[28,29,29,30,30,31,31,32,32,33,33,34],fmt:'%'},
+      {label:'Interview Management',highlight:false,data:[19,19,20,20,21,21,22,22,23,23,24,24],fmt:'%'},
+      {label:'Offer Management',highlight:false,data:[10,10,11,11,11,12,12,12,13,13,13,14],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'Job lens — % of active jobs with CRM activity in stage',
+      note:'Denominator = active jobs (open reqs with hiring activity in-period). Same six-stage map as account table · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'Req & Intake',highlight:false,data:[96,96,97,97,97,97,98,98,98,98,99,99],fmt:'%'},
+        {label:'Sourcing',highlight:true,data:[78,78,79,79,80,80,81,81,82,82,83,83],fmt:'%'},
+        {label:'Candidate engagement',highlight:false,data:[58,59,59,60,61,61,62,62,63,64,64,65],fmt:'%'},
+        {label:'Screening & Assessment',highlight:false,data:[48,49,49,50,51,51,52,52,53,54,54,55],fmt:'%'},
+        {label:'Interview Management',highlight:false,data:[34,35,35,36,36,37,37,38,38,39,40,40],fmt:'%'},
+        {label:'Offer Management',highlight:false,data:[17,17,18,18,19,19,20,20,21,21,22,22],fmt:'%'},
+      ],
+    },
+    notes:'Six pipeline stages: Sourcing (lead/job pipeline work) vs Candidate engagement (lists, campaigns, 1:1 outreach) are split for clearer diagnostics. Chart breadth index = live accounts with CRM activity in at least four of these six stages in-period. Use BOTH lenses: account % for adoption, job % for where work sits on open reqs. Expect drops after Sourcing/Candidate engagement toward Screening and Interview.',
+  },
+
+  // ── SECTION 2 ──────────────────────────────────────────────
+  {
+    id:5, section:'Section 2 — Hiring Pipeline & Funnel', sectionShort:'Hiring Pipeline & Funnel',
+    title:'Hiring Funnel — Jobs Perspective',
+    question:'Of jobs that receive candidates, what % are being worked through each stage in CRM?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'CRM Job Coverage Rate (%)', goalValue:80, goalLabel:'Goal: 80%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[56,59,61,60,62,63,64,63,64,65,67,68]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[48,50,52,51,53,54,55,54,55,56,57,58]},
+    tableTitle:'Job funnel — volumes & headline coverage',
+    tableRows:[
+      {label:'Jobs with ≥5 applications',highlight:false,data:[12400,12550,12680,12600,12780,12920,13050,12980,13100,13240,13380,13500]},
+      {label:'Jobs worked in CRM',highlight:false,data:[6944,7405,7735,7560,7924,8140,8352,8287,8384,8606,8965,9180]},
+      {label:'Jobs w/ hire (outcome)',highlight:false,data:[1420,1460,1490,1480,1520,1550,1580,1570,1600,1630,1660,1690]},
+      {label:'CRM job coverage (worked ÷ ≥5 apps)',highlight:true,data:[56,59,61,60,62,63,64,63,64,65,67,68],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'CRM job coverage by customer integration type',
+      note:'Same definition as chart — jobs worked in CRM ÷ jobs with ≥5 applications · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'2-way hiring status integration',highlight:false,data:[64,66,68,67,69,70,71,70,71,72,74,75],fmt:'%'},
+        {label:'1-way hiring status integration',highlight:false,data:[48,50,51,50,52,53,54,53,54,55,57,58],fmt:'%'},
+        {label:'Phenom Hire',highlight:false,data:[58,60,61,60,62,63,64,63,64,65,67,68],fmt:'%'},
+      ],
+    },
+    tertiaryTable:{
+      title:'New hiring pipeline vs old pipeline',
+      note:'New = unified CRM hiring pipeline (post-cutover / net-new config). Old = legacy pipeline (prior ATS sync model) — confirm cutover rules in Snowflake. Volumes sum to Table 1 “jobs ≥5 apps”; coverage = worked ÷ ≥5 apps within each cohort · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'New pipeline — jobs ≥5 applications',highlight:false,data:[3800,3900,4020,3980,4080,4180,4280,4240,4320,4400,4520,4640]},
+        {label:'Old pipeline — jobs ≥5 applications',highlight:false,data:[8600,8650,8660,8620,8700,8740,8770,8740,8780,8840,8860,8860]},
+        {label:'New pipeline — CRM job coverage',highlight:true,data:[64,65,66,65,67,68,69,68,69,70,71,73],fmt:'%'},
+        {label:'Old pipeline — CRM job coverage',highlight:false,data:[50,51,51,50,52,52,53,52,53,54,54,55],fmt:'%'},
+      ],
+    },
+    notes:'Coverage = jobs with meaningful CRM activity in-period ÷ jobs that reached ≥5 applications. Hire row is supporting context (not the headline). Forward hiring-status movement is covered on Slide 6. Table 3 splits the same job population into new vs old pipeline definitions — align cohort rules with data engineering. Align job definitions with Slide 4 job lens where possible.',
+  },
+  {
+    id:6, section:'Section 2 — Hiring Pipeline & Funnel', sectionShort:'Hiring Pipeline & Funnel',
+    title:'Hiring Status Changes — Volume & Stage Distribution',
+    question:'How much HS activity is happening in CRM, and where in the hiring journey does it concentrate?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Avg HS changes per active customer / month', goalValue:45, goalLabel:'Goal: 45 / customer',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[28,29,30,30,31,32,33,32,34,35,36,37]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[22,23,24,24,25,26,27,26,27,28,29,30]},
+    tableTitle:'HS change volumes by pipeline stage',
+    tableRows:[
+      {label:'Req & Intake',highlight:false,data:[1220,1280,1335,1320,1390,1450,1500,1440,1560,1620,1670,1740]},
+      {label:'Sourcing',highlight:false,data:[2680,2810,2940,2900,3060,3180,3300,3170,3430,3560,3680,3830]},
+      {label:'Candidate engagement',highlight:false,data:[1830,1910,2000,1980,2080,2170,2250,2160,2340,2430,2510,2610]},
+      {label:'Screening & Assessment',highlight:false,data:[3050,3190,3340,3300,3470,3620,3760,3600,3890,4040,4190,4350]},
+      {label:'Interview Management',highlight:false,data:[2440,2550,2670,2640,2780,2890,3000,2880,3110,3230,3350,3480]},
+      {label:'Offer Management',highlight:false,data:[980,1020,1070,1060,1110,1150,1200,1150,1250,1290,1340,1390]},
+      {label:'Total HS changes',highlight:false,data:[12200,12760,13355,13200,13890,14460,15010,14400,15580,16170,16740,17400]},
+    ],
+    secondaryTable:{
+      title:'HS changes by stage — % of total',
+      note:'Shows where in the hiring pipeline HS activity concentrates · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'Req & Intake',highlight:false,data:[10,10,10,10,10,10,10,10,10,10,10,10],fmt:'%'},
+        {label:'Sourcing',highlight:false,data:[22,22,22,22,22,22,22,22,22,22,22,22],fmt:'%'},
+        {label:'Candidate engagement',highlight:false,data:[15,15,15,15,15,15,15,15,15,15,15,15],fmt:'%'},
+        {label:'Screening & Assessment',highlight:false,data:[25,25,25,25,25,25,25,25,25,25,25,25],fmt:'%'},
+        {label:'Interview Management',highlight:false,data:[20,20,20,20,20,20,20,20,20,20,20,20],fmt:'%'},
+        {label:'Offer Management',highlight:false,data:[8,8,8,8,8,8,8,8,8,8,8,8],fmt:'%'},
+      ],
+    },
+    notes:'Avg HS changes per active customer normalizes for customer count growth. Stage distribution (Table 2) reveals whether usage concentrates at top-of-funnel (Req/Sourcing) or spreads into mid-funnel stages. Benchmark: customers using CRM across 4+ stages consistently outperform on hire outcomes.',
+  },
+  {
+    id:7, section:'Section 2 — Hiring Pipeline & Funnel', sectionShort:'Hiring Pipeline & Funnel',
+    title:'Hiring Status Changes — Customer Adoption by Integration Type',
+    question:'What % of live accounts are making HS changes, and how does that differ by integration type?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Live accounts making HS changes in-period (%)', goalValue:75, goalLabel:'Goal: 75%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[64,65,66,66,67,68,69,68,69,70,71,72]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[56,57,58,58,59,60,61,60,61,62,63,64]},
+    tableTitle:'Accounts making HS changes by integration type',
+    tableRows:[
+      {label:'2-way hiring status integration',highlight:false,data:[74,75,76,76,77,78,79,78,79,80,81,82],fmt:'%'},
+      {label:'1-way hiring status integration',highlight:false,data:[53,54,55,55,56,57,58,57,58,59,60,61],fmt:'%'},
+      {label:'Phenom Hire',highlight:false,data:[68,69,70,70,71,72,73,72,73,74,75,76],fmt:'%'},
+      {label:'All live accounts',highlight:true,data:[64,65,66,66,67,68,69,68,69,70,71,72],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'Stage depth — % of accounts with HS changes reaching Screening or later',
+      note:'Depth index = accounts that made HS changes in Screening, Interview, or Offer ÷ all live accounts. Measures mid-to-late funnel CRM embed · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'2-way hiring status integration',highlight:false,data:[45,46,47,47,48,49,50,49,50,51,52,53],fmt:'%'},
+        {label:'1-way hiring status integration',highlight:false,data:[24,25,25,26,27,27,28,27,28,29,30,30],fmt:'%'},
+        {label:'Phenom Hire',highlight:false,data:[40,41,42,42,43,44,45,44,45,46,47,48],fmt:'%'},
+        {label:'All live accounts',highlight:true,data:[37,38,39,39,40,41,42,41,42,43,44,45],fmt:'%'},
+      ],
+    },
+    notes:'2-way accounts lead on both adoption and depth because bidirectional sync gives recruiters live candidate status in CRM. 1-way accounts cluster in top-of-funnel stages (Req/Sourcing) where the sync covers them. Depth index (Table 2) is the leading indicator for mid-funnel product value.',
+  },
+  {
+    id:8, section:'Section 2 — Hiring Pipeline & Funnel', sectionShort:'Hiring Pipeline & Funnel',
+    title:'Hiring Status — Pre-Apply vs Post-Apply',
+    question:'Are recruiters working on sourced leads or on applicants?',
+    gap:true, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Pre-Apply Share of HS Changes (%)', goalValue:35, goalLabel:'Goal: 35%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[20,22,23,24,25,26,27,27,28,29,30,31]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[13,14,15,15,16,16,17,17,18,18,19,19]},
+    tableTitle:'Pre-apply vs post-apply HS volumes',
+    tableRows:[
+      {label:'Total HS changes',highlight:false,data:[24800,25200,25600,25300,25750,26180,26520,26300,26600,26920,27250,27580]},
+      {label:'Pre-apply HS changes (lead / sourced)',highlight:false,data:[4960,5544,5888,6072,6438,6807,7160,7101,7448,7807,8175,8550]},
+      {label:'Post-apply HS changes (applicants)',highlight:false,data:[19840,19656,19712,19228,19312,19373,19360,19199,19152,19113,19075,19030]},
+      {label:'Pre-apply share (%)',highlight:true,data:[20,22,23,24,25,26,27,27,28,29,30,31],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'Pre-apply share by customer integration type',
+      note:'Higher pre-apply share expected in 2-way and Phenom Hire customers (better lead → HS flow) · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'2-way hiring status integration',highlight:false,data:[28,30,31,32,33,34,35,35,36,37,38,39],fmt:'%'},
+        {label:'1-way hiring status integration',highlight:false,data:[12,13,13,14,14,15,16,16,17,17,18,18],fmt:'%'},
+        {label:'Phenom Hire',highlight:false,data:[24,25,26,27,28,29,30,30,31,32,33,34],fmt:'%'},
+      ],
+    },
+    notes:'DATA GAP (P1): Current storage does not differentiate lead vs applicant HS changes — pre/post-apply split requires an engineering enhancement to tag HS changes by candidate application status at time of change. Higher pre-apply share = recruiters working pipeline proactively (sourced leads), not reactively (applicant queue). Goal 35% is indicative; set with data team.',
+  },
+
+  // ── SECTION 3 ──────────────────────────────────────────────
+  {
+    id:9, section:'Section 3 — Automations (CRM Recipes)', sectionShort:'Automations',
+    title:'Automations — Customer Adoption Funnel',
+    question:'How many live CRM customers have meaningful automations configured and running at depth?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Real automation adoption rate (%)', goalValue:50, goalLabel:'Goal: 50%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[32,33,34,33,35,36,37,36,37,38,39,40]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[24,25,26,25,27,28,29,28,29,30,31,32]},
+    tableTitle:'Automation adoption funnel — all live accounts',
+    tableRows:[
+      {label:'Live CRM accounts',highlight:false,data:[428,429,431,430,432,433,435,434,436,435,437,438]},
+      {label:'Accounts with ≥10 recipes configured',highlight:false,data:[171,174,178,176,180,183,187,185,190,188,193,210]},
+      {label:'Real adoption (≥10 recipes + ≥30% job coverage)',highlight:false,data:[137,142,147,142,151,156,161,156,161,165,170,175]},
+      {label:'Real automation adoption rate (%)',highlight:true,data:[32,33,34,33,35,36,37,36,37,38,39,40],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'Category adoption — % of accounts with recipes using ≥1 action in category',
+      note:'Accounts may use multiple categories — rows are not mutually exclusive · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'Pipeline Organization (Add Tag, Add/Remove List, Assign to Project, Update Field)',highlight:false,data:[82,83,84,84,85,86,87,86,87,88,89,90],fmt:'%'},
+        {label:'Candidate Engagement (Send Email/SMS, Contact, Add to Campaign)',highlight:false,data:[48,50,51,50,52,54,55,54,55,57,58,60],fmt:'%'},
+        {label:'Pipeline Movement (Change HS, Invite for Interview, Forward to HM)',highlight:false,data:[52,53,54,54,55,56,57,56,57,58,59,60],fmt:'%'},
+        {label:'Assessment & Screening (Initiate Assessment/Screening, Forward Video Assessment)',highlight:false,data:[15,16,17,16,18,19,20,19,20,21,22,23],fmt:'%'},
+      ],
+    },
+    notes:'Real adoption rate = accounts crossing both the configuration depth bar (≥10 recipes) AND the job coverage bar (automations triggered on ≥30% of active jobs). A customer with recipes configured but low job coverage is not deriving systematic value. 2-way accounts lead because bidirectional sync provides more trigger conditions.',
+  },
+  {
+    id:10, section:'Section 3 — Automations (CRM Recipes)', sectionShort:'Automations',
+    title:'Automations — Job & Candidate Coverage',
+    question:'For what percentage of active jobs and candidates are automation recipes running?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Job automation coverage rate (%)', goalValue:60, goalLabel:'Goal: 60%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[38,40,42,41,44,46,48,47,49,51,52,54]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[28,30,31,31,33,34,36,35,36,38,39,41]},
+    tableTitle:'Job & candidate coverage',
+    tableRows:[
+      {label:'Active jobs (≥5 applications)',highlight:false,data:[12400,12550,12680,12600,12780,12920,13050,12980,13100,13240,13380,13500]},
+      {label:'Jobs with ≥1 automation triggered',highlight:false,data:[4712,5020,5326,5166,5623,5943,6264,6101,6419,6752,6958,7290]},
+      {label:'Job automation coverage (%)',highlight:true,data:[38,40,42,41,44,46,48,47,49,51,52,54],fmt:'%'},
+      {label:'Candidates on active jobs (est.)',highlight:false,data:[99200,100400,101440,100800,102240,103360,104400,103840,104800,105920,107040,108000]},
+      {label:'Candidates touched by ≥1 automation',highlight:false,data:[21820,24100,26374,25200,28627,31008,33408,32191,34584,37072,38534,41040]},
+      {label:'Candidate automation coverage (%)',highlight:false,data:[22,24,26,25,28,30,32,31,33,35,36,38],fmt:'%'},
+    ],
+    notes:'Job coverage normalises across customer size — a large customer covering 80% of jobs is more embedded than a small customer covering 100% of a handful of jobs. Candidate coverage is the reach signal: automation touching a growing share of the pipeline means recruiters\' workload is scaling without proportional manual effort.',
+  },
+  {
+    id:11, section:'Section 3 — Automations (CRM Recipes)', sectionShort:'Automations',
+    title:'Automations — Category Depth & Graduation',
+    question:'Are customers automating across the full hiring workflow, or relying on one category of actions?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Customers using ≥2 automation categories (%)', goalValue:65, goalLabel:'Goal: 65%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[42,44,46,45,47,48,50,49,51,53,54,56]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[32,33,35,34,36,37,39,38,39,41,42,44]},
+    tableTitle:'Category adoption — % of active automation customers using ≥1 action in category',
+    tableRows:[
+      {label:'Pipeline Organization (Add Tag, Add/Remove List, Assign to Project, Update Field)',highlight:false,data:[82,83,84,84,85,86,87,86,87,88,89,90],fmt:'%'},
+      {label:'Candidate Engagement (Send Email/SMS, Contact, Add to Campaign, Notification)',highlight:false,data:[48,50,51,50,52,54,55,54,55,57,58,60],fmt:'%'},
+      {label:'Pipeline Movement (Change HS, Invite for Interview, Forward to HM, Forward Profile)',highlight:false,data:[52,53,54,54,55,56,57,56,57,58,59,60],fmt:'%'},
+      {label:'Assessment & Screening (Initiate Assessment/Screening, Forward Video Assessment)',highlight:false,data:[15,16,17,16,18,19,20,19,20,21,22,23],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'Category graduation — distribution of active automation customers by number of categories used',
+      note:'Healthy signal: 1-category-only share declining; 3- and 4-category shares growing · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'1 category only',highlight:false,data:[58,56,54,55,53,52,50,51,49,47,46,44],fmt:'%'},
+        {label:'2 categories',highlight:false,data:[24,25,26,25,27,27,28,27,28,29,29,30],fmt:'%'},
+        {label:'3 categories',highlight:true,data:[13,14,15,14,15,16,17,16,17,18,19,20],fmt:'%'},
+        {label:'All 4 categories',highlight:false,data:[5,5,5,6,5,5,5,6,6,6,6,6],fmt:'%'},
+      ],
+    },
+    notes:'Four categories align to the action catalog: Pipeline Organization (highest adoption — basic data hygiene), Candidate Engagement (messaging reach), Pipeline Movement (highest value — drives HS changes at scale), Assessment & Screening (emerging capability — connects to HI layer). Cross-category graduation is the leading indicator for customer stickiness and product embed. As new Automation Engine actions ship, map them to these categories to track net-new capability adoption.',
+  },
+  {
+    id:12, section:'Section 3 — Automations (CRM Recipes)', sectionShort:'Automations',
+    title:'Automations — Reliability & Error Analysis',
+    question:'How reliably are automations executing, and where do failures concentrate?',
+    gap:true, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Automation completion rate (%)', goalValue:95, goalLabel:'Goal: 95%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[92,94,95,94,96,97,97,96,97,98,97,98]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[86,88,89,88,90,91,91,90,91,92,91,92]},
+    tableTitle:'Execution volumes & completion breakdown',
+    tableRows:[
+      {label:'Total executions (K)',highlight:false,data:[12050,10420,12140,10230,9520,11930,10530,11940,13020,10810,10120,12730]},
+      {label:'Completed (K)',highlight:false,data:[11086,9795,11533,9616,9139,11572,10214,11462,12629,10594,9816,12475]},
+      {label:'Skipped / Warning (K)',highlight:false,data:[580,375,365,370,230,215,190,285,235,130,185,155]},
+      {label:'Failed / Error (K)',highlight:false,data:[384,250,242,244,151,143,126,193,156,86,119,100]},
+      {label:'Completion rate (%)',highlight:true,data:[92,94,95,94,96,97,97,96,97,98,97,98],fmt:'%'},
+      {label:'Error rate (%)',highlight:false,data:[3,2,2,2,2,1,1,2,1,1,1,1],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'Error breakdown by failure type',
+      note:'DATA GAP (P1): Error taxonomy requires engineering instrumentation. Rows below are indicative target categories pending Sai\'s team alignment · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'Missing / invalid configuration',highlight:false,data:[46,30,29,30,18,17,15,23,19,10,14,12],fmt:''},
+        {label:'Invalid or missing data (candidate / job)',highlight:false,data:[138,100,97,97,60,57,50,77,62,34,48,40],fmt:''},
+        {label:'Timeout / rate limit',highlight:false,data:[115,75,72,73,45,43,38,58,47,26,36,30],fmt:''},
+        {label:'Permissions / access error',highlight:false,data:[85,45,44,44,28,26,23,35,28,16,21,18],fmt:''},
+      ],
+    },
+    notes:'DATA GAP (P1): Error taxonomy (missing config, invalid data, timeout, permissions) requires coordination with Sai\'s team — currently not captured separately. Completion rate is the leading reliability KPI; error-type breakdown is the diagnostic layer. Any month with >10% MoM drop in total executions — investigate top 3 customer changes before reporting.',
+  },
+
+  // ── SECTION 4 ──────────────────────────────────────────────
+  {
+    id:13, section:'Section 4 — Profile', sectionShort:'Profile',
+    title:'Profile Forwards — Adoption & Activity',
+    question:'How actively are recruiters sharing candidate profiles?',
+    gap:false, isNew:false,
+    chartType:'line-cy-py',
+    metricLabel:'Profile Forward Adoption Rate (%)', goalValue:50, goalLabel:'Goal: 50%',
+    currentYear: {label:'FY26',data:[32,34,36,35,37,38,39,38,39,40,42,43]},
+    previousYear:{label:'FY25',data:[24,26,28,27,29,30,31,30,31,32,33,34]},
+    tableRows:[
+      {label:'Active customers',ph:true,highlight:false},
+      {label:'Active users (forwarding)',ph:true,highlight:false},
+      {label:'Total active CRM users',ph:true,highlight:false},
+      {label:'Adoption rate (%)',ph:false,highlight:true,
+        data:[null,null,null,null,null,null,39,38,39,40,42,43],fmt:'%'},
+      {label:'Profile forwards (volume)',ph:true,highlight:false},
+      {label:'Forwards per active user',ph:true,highlight:false},
+    ],
+  },
+
+  // ── SECTION 5 ──────────────────────────────────────────────
+  {
+    id:14, section:'Section 5 — Messaging as Platform', sectionShort:'Messaging — Platform',
+    title:'Messaging Platform — Delivery Health',
+    question:'Are messages being delivered reliably across channels?',
+    gap:true, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Delivery Rate — Email (%)', goalValue:97, goalLabel:'Goal: 97%',
+    currentYear: {label:'FY26',data:[97.0,97.5,97.8,97.6,97.9,98.0,98.1,97.9,98.0,98.2,98.1,98.3]},
+    previousYear:{label:'FY25',data:[95.8,96.1,96.3,96.2,96.5,96.6,96.8,96.6,96.7,96.9,96.8,97.0]},
+    tableRows:[
+      {label:'Email — sent',ph:true,highlight:false},
+      {label:'Email — delivery rate',ph:false,highlight:true,data:[null,null,null,null,null,null,98.1,97.9,98.0,98.2,98.1,98.3],fmt:'%'},
+      {label:'SMS — sent',ph:true,highlight:false},
+      {label:'SMS — delivery rate',ph:false,highlight:false,data:[null,null,null,null,null,null,96.0,95.9,96.0,96.2,96.1,96.3],fmt:'%'},
+      {label:'WhatsApp — delivery rate',ph:false,highlight:false,data:[null,null,null,null,null,null,97.4,97.3,97.4,97.6,97.5,97.7],fmt:'%'},
+    ],
+    notes:'DATA GAP (P1): Platform messaging layer (screening invites, scheduling notifications, ATS-triggered events, HRM events) is currently excluded. This slide should include all programmatic sources.',
+  },
+  {
+    id:15, section:'Section 5 — Messaging as Platform', sectionShort:'Messaging — Platform',
+    title:'Messaging Platform — Funnel Position',
+    question:'Where in the hiring journey are platform messages being triggered?',
+    gap:true, isNew:true,
+    chartType:'stacked-area',
+    metricLabel:'Message Distribution by Hiring Stage (%)',
+    stackSeries:[
+      {label:'Lead / Sourcing',color:'#27282C',data:[65,64,63,62,61,60,59,59,58,57,56,55]},
+      {label:'Screening',color:'#7A818C',data:[16,16,17,17,18,18,19,19,20,20,21,22]},
+      {label:'Interview',color:'#cbd5e1',data:[10,11,11,12,12,13,13,13,13,14,14,14]},
+      {label:'Offer',color:'#e2e8f0',data:[4,5,5,5,5,5,5,5,5,5,5,5]},
+      {label:'System / Other',color:'#F1F5F9',data:[5,4,4,4,4,4,4,4,4,4,4,4]},
+    ],
+    tableRows:[
+      {label:'Lead / Sourcing',ph:false,highlight:false,data:[null,null,null,null,null,null,59,59,58,57,56,55],fmt:'%'},
+      {label:'Screening',ph:false,highlight:false,data:[null,null,null,null,null,null,19,19,20,20,21,22],fmt:'%'},
+      {label:'Interview',ph:false,highlight:false,data:[null,null,null,null,null,null,13,13,13,14,14,14],fmt:'%'},
+      {label:'Offer',ph:false,highlight:false,data:[null,null,null,null,null,null,5,5,5,5,5,5],fmt:'%'},
+      {label:'System / Other',ph:false,highlight:false,data:[null,null,null,null,null,null,4,4,4,4,4,4],fmt:'%'},
+    ],
+    notes:'DATA GAP (P2): Requires mapping message send context to candidate pipeline stage. If Lead/Sourcing dominates at 90%+, messaging is not supporting later-funnel stages.',
+  },
+
+  // ── SECTION 6 ──────────────────────────────────────────────
+  {
+    id:16, section:'Section 6 — Talent Engagement (Messaging as Experience)', sectionShort:'Messaging — Experience',
+    title:'1:1 Messaging — Adoption',
+    question:'What share of active CRM users leverage 1:1 messaging?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'1:1 Email Adoption Rate (%)', goalValue:50, goalLabel:'Goal: 50%',
+    currentYear: {label:'FY26',data:[25,27,28,27,29,30,31,30,31,32,33,34]},
+    previousYear:{label:'FY25',data:[19,21,22,21,23,24,25,24,25,26,27,28]},
+    tableRows:[
+      {label:'Active CRM users (denominator)',ph:true,highlight:false},
+      {label:'1:1 Email — users',ph:true,highlight:false},
+      {label:'1:1 Email — adoption rate',ph:false,highlight:true,data:[null,null,null,null,null,null,31,30,31,32,33,34],fmt:'%'},
+      {label:'1:1 SMS — users',ph:true,highlight:false},
+      {label:'1:1 SMS — adoption rate',ph:false,highlight:false,data:[null,null,null,null,null,null,11,10,11,12,12,13],fmt:'%'},
+      {label:'1:1 WhatsApp — adoption rate',ph:false,highlight:false,data:[null,null,null,null,null,null,5,5,6,6,7,7],fmt:'%'},
+    ],
+    notes:'Currently ~27% for email. Status quo reports absolute user counts (6,399 email users) — this replaces it with adoption rate as the headline metric.',
+  },
+  {
+    id:17, section:'Section 6 — Talent Engagement (Messaging as Experience)', sectionShort:'Messaging — Experience',
+    title:'Recruiter Campaigns — Adoption & Outcomes',
+    question:'Are campaigns driving measurable outcomes?',
+    gap:true, isNew:true,
+    chartType:'line-cy-py',
+    metricLabel:'Campaign Conversion Rate (%)', goalValue:5, goalLabel:'Goal: 5%',
+    currentYear: {label:'FY26',data:[2.6,3.0,3.2,3.1,3.4,3.5,3.6,3.5,3.6,3.7,3.8,3.9]},
+    previousYear:{label:'FY25',data:[1.8,2.0,2.2,2.1,2.4,2.5,2.6,2.5,2.6,2.7,2.8,2.9]},
+    tableRows:[
+      {label:'Active customers (campaigns)',ph:true,highlight:false},
+      {label:'Campaign adoption rate (%)',ph:false,highlight:false,data:[null,null,null,null,null,null,48,47,48,49,51,52],fmt:'%'},
+      {label:'Campaigns sent',ph:true,highlight:false},
+      {label:'Candidates contacted',ph:true,highlight:false},
+      {label:'Applications generated',ph:true,highlight:false},
+      {label:'Conversion rate (%)',ph:false,highlight:true,data:[null,null,null,null,null,null,3.6,3.5,3.6,3.7,3.8,3.9],fmt:'%'},
+    ],
+    notes:'DATA GAP (P2): Campaign intent classification does not exist. Interim: approximate by presence of job link. Conversion rate = applications generated / candidates contacted for lead-gen campaigns.',
+  },
+  {
+    id:18, section:'Section 6 — Talent Engagement (Messaging as Experience)', sectionShort:'Messaging — Experience',
+    title:'Subscription Campaigns',
+    question:'How are subscription-based campaigns performing?',
+    gap:false, isNew:false,
+    chartType:'line-cy-py',
+    metricLabel:'Click-Through Rate (%)', goalValue:5, goalLabel:'Goal: 5%',
+    currentYear: {label:'FY26',data:[3.9,4.2,4.4,4.3,4.5,4.6,4.7,4.6,4.7,4.8,5.0,5.1]},
+    previousYear:{label:'FY25',data:[3.1,3.3,3.5,3.4,3.6,3.7,3.8,3.7,3.8,3.9,4.0,4.1]},
+    tableRows:[
+      {label:'Active customers',ph:true,highlight:false},
+      {label:'Subscribers reached (delivered)',ph:true,highlight:false},
+      {label:'Opens',ph:true,highlight:false},
+      {label:'Clicks',ph:true,highlight:false},
+      {label:'Open rate (%)',ph:true,highlight:false},
+      {label:'Click-through rate (%)',ph:false,highlight:true,data:[null,null,null,null,null,null,4.7,4.6,4.7,4.8,5.0,5.1],fmt:'%'},
+    ],
+  },
+
+  // ── SECTION 7 ──────────────────────────────────────────────
+  {
+    id:19, section:'Section 7 — Quality & Reliability', sectionShort:'Quality & Reliability',
+    title:'Defects — Per Product Area',
+    question:'What is breaking, and what is the root cause?',
+    gap:false, isNew:true,
+    chartType:'defects',
+    metricLabel:'Defect Volume with Root Cause Stack (SLA Compliance % on right axis)',
+    tabs:['Core','Automations','Profile','Messaging'],
+    activeTab:0,
+    tabData:[
+      {sla:[89,93,94,92,95,96,97,96,97,98,97,98],stacks:[{label:'Product bug',color:C.red,data:[10,8,8,9,9,8,8,7,7,7,6,6]},{label:'Knowledge gap',color:C.amber,data:[5,5,4,5,4,5,4,4,4,3,4,3]},{label:'Doc gap',color:'#fbbf24',data:[4,3,3,3,3,3,3,3,2,3,2,2]},{label:'No issue',color:C.emerald,data:[2,2,2,2,2,2,2,2,2,2,1,1]},{label:'Enhancement req.',color:C.accent,data:[2,2,2,3,3,2,2,2,2,1,2,2]}],goalMax:20},
+      {sla:[91,94,95,93,96,97,98,97,98,99,98,99],stacks:[{label:'Product bug',color:C.red,data:[5,4,3,4,4,3,3,3,3,2,3,2]},{label:'Knowledge gap',color:C.amber,data:[6,5,5,6,5,6,5,5,4,4,4,3]},{label:'Doc gap',color:'#fbbf24',data:[3,2,2,3,2,2,2,2,2,2,2,2]},{label:'No issue',color:C.emerald,data:[2,2,2,2,2,2,1,1,1,1,1,1]},{label:'Enhancement req.',color:C.accent,data:[1,2,2,1,2,1,2,1,1,1,1,1]}],goalMax:15},
+      {sla:[94,96,97,95,97,98,98,97,98,99,98,99],stacks:[{label:'Product bug',color:C.red,data:[3,2,2,3,3,2,2,2,2,1,2,1]},{label:'Knowledge gap',color:C.amber,data:[3,2,2,2,2,2,2,2,1,2,1,1]},{label:'Doc gap',color:'#fbbf24',data:[2,2,1,2,1,1,1,1,1,1,1,1]},{label:'No issue',color:C.emerald,data:[1,1,1,1,1,1,1,1,1,1,1,1]},{label:'Enhancement req.',color:C.accent,data:[1,1,2,1,1,1,1,1,1,1,1,1]}],goalMax:10},
+      {sla:[87,91,92,90,93,94,95,94,95,96,95,96],stacks:[{label:'Product bug',color:C.red,data:[8,6,6,7,7,6,6,5,6,5,5,4]},{label:'Knowledge gap',color:C.amber,data:[9,7,7,8,7,8,7,6,7,6,6,5]},{label:'Doc gap',color:'#fbbf24',data:[5,4,3,4,4,3,4,3,3,3,3,2]},{label:'No issue',color:C.emerald,data:[3,3,3,2,2,2,2,2,2,2,2,2]},{label:'Enhancement req.',color:C.accent,data:[3,2,2,2,2,2,2,2,2,2,2,2]}],goalMax:20},
+    ],
+  },
+  {
+    id:20, section:'Section 7 — Quality & Reliability', sectionShort:'Quality & Reliability',
+    title:'Service Requests — Per Product Area',
+    question:'What are customers asking for help with?',
+    gap:false, isNew:false,
+    chartType:'sr',
+    metricLabel:'SR Volume with Root Cause Stack',
+    tabs:['Core','Automations','Profile','Messaging'],
+    activeTab:0,
+    tabData:[
+      {stacks:[{label:'Knowledge gap',color:C.amber,data:[22,19,19,21,20,19,19,18,17,17,16,15]},{label:'Doc gap',color:'#fbbf24',data:[13,11,11,12,12,11,11,10,10,10,9,9]},{label:'Feature gap',color:C.red,data:[8,8,7,8,7,8,7,7,7,6,6,6]},{label:'Config issue',color:'#6366f1',data:[4,4,4,4,4,4,4,4,4,4,4,4]},{label:'Other',color:'#cbd5e1',data:[2,2,2,2,2,2,2,2,2,2,2,2]}],goalMax:40},
+      {stacks:[{label:'Knowledge gap',color:C.amber,data:[13,11,11,13,12,11,11,10,10,9,9,8]},{label:'Doc gap',color:'#fbbf24',data:[7,6,5,6,6,5,5,5,5,5,4,4]},{label:'Feature gap',color:C.red,data:[5,5,4,5,4,5,4,4,4,4,4,3]},{label:'Config issue',color:'#6366f1',data:[9,7,7,8,7,8,7,6,7,6,6,6]},{label:'Other',color:'#cbd5e1',data:[2,2,2,2,2,2,2,2,2,2,2,2]}],goalMax:35},
+      {stacks:[{label:'Knowledge gap',color:C.amber,data:[6,5,4,5,5,4,4,4,4,3,4,3]},{label:'Doc gap',color:'#fbbf24',data:[4,3,3,3,3,3,3,3,2,3,2,2]},{label:'Feature gap',color:C.red,data:[2,2,2,2,2,2,2,2,2,2,2,2]},{label:'Config issue',color:'#6366f1',data:[2,2,2,2,2,2,2,2,2,2,2,2]},{label:'Other',color:'#cbd5e1',data:[1,1,1,1,1,1,1,1,1,1,1,1]}],goalMax:15},
+      {stacks:[{label:'Knowledge gap',color:C.amber,data:[17,14,13,15,14,13,13,12,12,11,11,10]},{label:'Doc gap',color:'#fbbf24',data:[9,7,7,8,7,8,7,6,7,6,6,5]},{label:'Feature gap',color:C.red,data:[7,6,5,6,5,6,5,5,5,4,5,4]},{label:'Config issue',color:'#6366f1',data:[5,5,5,5,5,5,5,4,4,4,4,4]},{label:'Other',color:'#cbd5e1',data:[3,2,2,2,2,2,2,2,2,2,2,2]}],goalMax:35},
+    ],
+  },
+];
+
+// Mark all un-decked slides as RX
+SLIDES.forEach(s => { if (!s.deck) s.deck = 'rx'; });
+
+// ── AUTOMATION ENGINE SLIDES ─────────────────────────────────
+const AE_SLIDES = [
+  // ── AE SECTION 1 ──────────────────────────────────────────
+  {
+    id:1, deck:'ae', section:'AE — Executive Overview', sectionShort:'Executive Overview',
+    title:'Executive Summary',
+    question:'What moved this week — and what does leadership need to know?',
+    gap:false, isNew:false,
+    chartType:'exec-summary',
+    metrics:[
+      {cardTitle:'Recruiter value — hours saved & cost',rows:[
+        {label:'Recruiter hours saved / month',value:'3,420',delta:'+6.5% MoM',tone:'up'},
+        {label:'Est. cost saving / month',value:'$214K',delta:'+8.1% MoM',tone:'up'},
+      ]},
+      {label:'Live customers on AE',value:'84',delta:'+5 MoM',tone:'up'},
+      {label:'Automation Depth (avg. use case categories)',value:'1.8',delta:'+0.2 MoM',tone:'up'},
+      {cardTitle:'Workflow runs & reliability',rows:[
+        {label:'Total workflow runs / month',value:'486K',delta:'+4.1% MoM',tone:'up'},
+        {label:'Successful completion rate',value:'98.6%',delta:'+0.2pp MoM',tone:'up'},
+      ]},
+    ],
+    notes:'Headline: automation value is compounding — hours saved and cost reduction both accelerating. Watch avg. workflows per customer — slight MoM dip warrants monitoring over the next 2 weeks.',
+  },
+  {
+    id:2, deck:'ae', section:'AE — Executive Overview', sectionShort:'Executive Overview',
+    title:'Highlights, Lowlights & Support Required',
+    question:'What moved in the right direction, what slipped, and what needs leadership action?',
+    gap:false, isNew:false,
+    chartType:'three-blocks',
+    blocks:[
+      {variant:'highlights',title:'Highlights',bullets:[
+        'Shipped queue tuning to prod — P95 run latency down ~6% WoW',
+        'Two net-new enterprise tenants completed first successful workflow runs',
+        'Connector SDK v2 private beta kicked off with first design partner',
+      ]},
+      {variant:'lowlights',title:'Lowlights',bullets:[
+        'Workday mapping defects backlog grew (+8 tickets) — root cause: unclear field spec from vendor docs',
+        'EU residency design review slipped 4 days — conflicting guidance on data locality scope',
+        'Avg. workflows per customer dipped MoM — partly seasonal, partly slower onboarding in two accounts',
+      ]},
+      {variant:'support',title:'Support Required',bullets:[
+        'Bootcamp: 2 sessions needed (CS + Solutions) on advanced debugging for top 5 accounts',
+        'GTM: one-pager on AE vs. generic iPaaS for enterprise RFPs — target next Friday',
+        'Leadership readout slot (15 min) on EU pilot timeline tradeoffs',
+      ]},
+    ],
+    notes:'',
+  },
+  // ── AE SECTION 2 ──────────────────────────────────────────
+  {
+    id:3, deck:'ae', section:'AE — Customer Base', sectionShort:'Customer Base',
+    title:'Customer Base — Account Lifecycle',
+    question:'How is the AE-entitled customer base growing, and what share is actively using the platform?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py', chartUnit:'%',
+    metricLabel:'Active rate (%) — AE-entitled accounts', goalValue:60, goalLabel:'Target: 60%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[42.7,41.9,43.3,44.4,45.2,44.7,45.5,46.0,46.8,47.4,47.6,47.2]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[35.2,34.5,36.1,37.0,38.1,37.6,38.5,38.9,40.2,40.6,40.3,40.8]},
+    tableTitle:'Customer base — account lifecycle',
+    tableNote:'Full fiscal year (Feb – Jan)',
+    tableRows:[
+      {label:'Total AE-entitled accounts',highlight:false,data:[185,186,187,187,188,188,189,189,190,190,191,195]},
+      {label:'Live accounts (contract active)',highlight:false,data:[163,164,165,165,166,166,167,167,168,168,169,173]},
+      {label:'Active Impl.',highlight:false,data:[22,22,22,22,22,22,22,22,22,22,22,22]},
+      {label:'Go-lives this period',highlight:false,data:[4,3,5,3,4,4,5,3,4,5,3,4]},
+      {label:'Churn this period',highlight:false,data:[1,2,1,1,2,1,1,2,1,1,2,1]},
+      {label:'Net change',highlight:false,data:[3,1,4,2,2,3,4,1,3,4,1,3]},
+      {label:'Active accounts',highlight:false,data:[79,78,81,83,85,84,86,87,89,90,91,92]},
+      {label:'Active rate (%)',highlight:true,data:[42.7,41.9,43.3,44.4,45.2,44.7,45.5,46.0,46.8,47.4,47.6,47.2],fmt:'%'},
+    ],
+    notes:'Active = ≥1 automation workflow triggered a run in-period. Denominator = all AE-entitled accounts (contract includes AE). Implementation accounts are included in denominator — this artificially deflates the rate until they go live.',
+    secondaryTable:{
+      title:'Live customers by use case category',
+      note:'Full fiscal year (Feb – Jan) · Customers may be live on multiple categories',
+      tableRows:[
+        {label:'Talent Engagement',highlight:false,data:[54,53,56,58,61,60,63,64,68,69,71,73]},
+        {label:'Hiring Automation',highlight:true,data:[77,76,80,81,83,82,84,85,88,89,90,92]},
+        {label:'Offer Management',highlight:false,data:[10,9,11,11,12,12,12,13,13,14,15,16]},
+        {label:'Talent Onboarding',highlight:false,data:[6,7,8,8,9,10,10,11,12,13,14,15]},
+        {label:'Job Management',highlight:false,data:[17,18,19,20,21,21,22,23,25,26,27,29]},
+      ],
+    },
+  },
+  {
+    id:4, deck:'ae', section:'AE — Customer & Value', sectionShort:'Customer & Value',
+    title:'Automation Depth — North Star',
+    question:'How broadly are customers using the Automation Engine across use case categories?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py', chartUnit:'',
+    metricLabel:'Avg. active use case categories per live customer', goalValue:2.5, goalLabel:'Target: 2.5 categories',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[1.4,1.4,1.5,1.5,1.5,1.6,1.6,1.6,1.7,1.7,1.8,1.8]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[1.1,1.1,1.1,1.2,1.2,1.2,1.3,1.3,1.3,1.4,1.4,1.4]},
+    tableTitle:'Automation depth distribution — % of live customers by depth',
+    tableNote:'Full fiscal year (Feb – Jan) · Rows do not sum to 100% across months independently',
+    tableRows:[
+      {label:'1 category only (%)',highlight:false,data:[61,62,60,59,58,57,56,55,54,53,52,51],fmt:'%'},
+      {label:'2 categories (%)',highlight:false,data:[28,27,29,30,31,31,32,33,34,35,36,37],fmt:'%'},
+      {label:'3 categories (%)',highlight:false,data:[8,8,8,9,9,10,10,10,11,11,11,11],fmt:'%'},
+      {label:'4+ categories (%)',highlight:false,data:[3,3,3,2,2,2,2,2,1,1,1,1],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'Use case activation — % of live customers active in each category',
+      note:'Full fiscal year (Feb – Jan) · Customers may use multiple categories',
+      tableRows:[
+        {label:'Talent Engagement (%)',highlight:false,data:[68,67,69,70,72,71,73,74,76,77,78,79],fmt:'%'},
+        {label:'Hiring Automation (%)',highlight:true,data:[98,96,97,98,98,97,98,98,99,99,99,99],fmt:'%'},
+        {label:'Offer Management (%)',highlight:false,data:[12,12,13,13,14,14,14,15,15,16,16,17],fmt:'%'},
+        {label:'Talent Onboarding (%)',highlight:false,data:[8,9,10,10,11,12,12,13,14,14,15,16],fmt:'%'},
+        {label:'Job Management (%)',highlight:false,data:[22,23,23,24,25,25,26,27,28,29,30,31],fmt:'%'},
+      ],
+    },
+    notes:'Automation Depth is the platform North Star. Depth 1 = single-category adoption (typically Hiring Automation only); target is 2.5 avg. by end of FY26. Offer Management and Talent Onboarding growing fastest from a low base — key expansion levers for CS.',
+  },
+  {
+    id:5, deck:'ae', section:'AE — Customer & Value', sectionShort:'Customer & Value',
+    title:'Automation Coverage',
+    question:'What share of candidates, hires, and jobs are being touched by at least one automation — and where does coverage concentrate across job zones?',
+    gap:true, isNew:true,
+    chartType:'line-cy-py', chartUnit:'%',
+    metricLabel:'Overall automation coverage (%) — avg. across entity types', goalValue:60, goalLabel:'Target: 60%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[38,37,39,41,43,42,44,45,47,48,48,48]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[28,27,29,30,32,31,33,34,36,37,37,37]},
+    tableTitle:'Automation coverage — by entity type (%)',
+    tableNote:'Full fiscal year (Feb – Jan) · Coverage = entities with ≥1 automation run ÷ total eligible entities in period',
+    tableRows:[
+      {label:'Overall coverage (avg. %)',highlight:true,data:[38,37,39,41,43,42,44,45,47,48,48,48],fmt:'%'},
+      {label:'Candidate coverage (%)',highlight:false,data:[44,43,45,47,49,48,50,51,53,54,55,55],fmt:'%'},
+      {label:'Hire coverage (%)',highlight:false,data:[58,57,60,62,64,63,65,66,68,69,70,71],fmt:'%'},
+      {label:'Job coverage (%)',highlight:false,data:[28,27,29,31,33,32,34,35,37,38,38,39],fmt:'%'},
+    ],
+    secondaryTable:{
+      title:'Job coverage (%) — by Job Zone',
+      note:'Full fiscal year (Feb – Jan) · % of active jobs in each zone that had ≥1 automation run in period',
+      tableRows:[
+        {label:'Job Zone 1 — High-volume hourly',highlight:false,data:[54,53,56,58,61,60,63,64,67,68,69,70],fmt:'%'},
+        {label:'Job Zone 2 — Semi-skilled operations',highlight:false,data:[42,41,44,46,48,47,49,50,52,53,54,55],fmt:'%'},
+        {label:'Job Zone 3 — Skilled professional',highlight:false,data:[34,33,35,37,39,38,40,41,43,44,44,45],fmt:'%'},
+        {label:'Job Zone 4 — Expert / management',highlight:false,data:[22,21,23,24,26,25,27,28,30,31,31,32],fmt:'%'},
+        {label:'Job Zone 5 — Executive & specialized',highlight:false,data:[11,10,12,13,14,13,14,15,16,17,17,18],fmt:'%'},
+      ],
+    },
+    notes:'DATA GAP: Entity-level attribution (run_log.entity_id → candidate / hire / job) is not yet instrumented. Values shown are directional targets pending data model work. Hire coverage is highest — onboarding workflows fire at hire event by default. Zone 1 job coverage is highest — high-volume roles benefit most from standardised automation. Zone 5 executive coverage is lowest — white-glove process leaves limited automation surface area. Backlog: "runs per active job" proxy metric can serve as interim signal until full entity attribution is available.',
+  },
+  // ── AE SECTION 3 ──────────────────────────────────────────
+  {
+    id:6, deck:'ae', section:'AE — Platform Adoption', sectionShort:'Platform Adoption',
+    title:'Platform Adoption — Time to Build',
+    question:'How quickly can customers build and activate a new automation workflow — and does it differ by use case and who is building?',
+    gap:false, isNew:false, isPhase2:true,
+    chartType:'line-cy-py', chartUnit:' min',
+    metricLabel:'Avg. time to build a workflow (minutes)', goalValue:15, goalLabel:'Target: 15 min',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[24,23,22,21,22,20,21,20,19,20,19,18]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[30,29,28,27,28,26,27,26,25,26,25,24]},
+    tableTitle:'Avg. time to build — by use case (minutes)',
+    tableNote:'Full fiscal year (Feb – Jan) · Time from "new workflow" click to first successful test run',
+    tableRows:[
+      {label:'Total avg. (all use cases)',highlight:true,data:[24,23,22,21,22,20,21,20,19,20,19,18]},
+      {label:'Talent Engagement',highlight:false,data:[18,17,17,16,17,15,16,15,15,15,14,14]},
+      {label:'Hiring Automation',highlight:false,data:[20,18,18,16,18,15,17,15,15,15,15,14]},
+      {label:'Offer Management',highlight:false,data:[28,27,26,25,26,24,25,24,23,24,23,22]},
+      {label:'Talent Onboarding',highlight:false,data:[35,33,29,30,33,33,29,29,31,30,28,28]},
+      {label:'Job Management',highlight:false,data:[22,21,20,19,20,19,20,19,18,19,18,17]},
+    ],
+    secondaryTable:{
+      title:'Avg. time to build — by builder persona (minutes)',
+      note:'Full fiscal year (Feb – Jan) · Builder persona captured at workflow creation · Lower = faster self-service',
+      tableRows:[
+        {label:'Overall avg.',highlight:true,data:[24,23,22,21,22,20,21,20,19,20,19,18]},
+        {label:'Phenom user (PS / CS)',highlight:false,data:[12,11,11,10,11,10,11,10,10,10,9,9]},
+        {label:'Customer — HRIT',highlight:false,data:[26,25,24,23,24,22,23,22,21,22,21,20]},
+        {label:'Customer — Recruiter',highlight:false,data:[38,36,34,33,35,33,34,32,31,33,31,30]},
+      ],
+    },
+    notes:'Lower is better. Phenom PS/CS users build ~2× faster than customer HRIT — reflecting platform expertise, not a product gap. Recruiter persona takes longest, pointing to UX complexity in advanced logic steps. Guided setup wizard (shipped Q2) reduced Hiring Automation avg by ~6 min across all personas. Talent Onboarding remains highest due to HCM field mapping complexity — particularly for Recruiter builders.',
+  },
+  {
+    id:7, deck:'ae', section:'AE — Platform Adoption', sectionShort:'Platform Adoption',
+    title:'Activity Builder Adoption',
+    question:'Are customers adopting the no-code activity builder, or falling back to manual configuration?',
+    gap:false, isNew:false,
+    chartType:'line-cy-py', chartUnit:'%',
+    metricLabel:'% of activities configured via activity builder', goalValue:70, goalLabel:'Target: 70%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[59.8,59.5,58.9,58.3,57.6,57.0,56.5,56.1,56.0,56.1,56.4,56.9]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[52,52,51,51,50,49,49,49,48,48,49,50]},
+    tableTitle:'Activity builder vs. manual — monthly',
+    tableRows:[
+      {label:'Total activities configured',highlight:false,data:[1310,1335,1360,1385,1400,1425,1440,1465,1490,1515,1540,1565]},
+      {label:'Via activity builder',highlight:false,data:[784,794,801,807,807,812,813,822,834,850,868,890]},
+      {label:'Manual configuration',highlight:false,data:[526,541,559,578,593,613,627,643,656,665,672,675]},
+      {label:'Activity builder adoption (%)',highlight:true,data:[59.8,59.5,58.9,58.3,57.6,57.0,56.5,56.1,56.0,56.1,56.4,56.9],fmt:'%'},
+    ],
+    notes:'DATA WATCH: Activity builder share is declining slightly as manual configurations grow faster than guided setup. Root cause: power users prefer manual for complex multi-condition logic. Enhanced condition builder shipped Feb — expect to see reversal in Apr data.',
+  },
+  {
+    id:8, deck:'ae', section:'AE — Platform Adoption', sectionShort:'Platform Adoption',
+    title:'Activity Activation Rate',
+    question:'Of all activities that have been built, how many are actively running inside live workflows this period?',
+    gap:false, isNew:true,
+    chartType:'line-cy-py', chartUnit:'%',
+    metricLabel:'Activity activation rate (%)', goalValue:75, goalLabel:'Target: 75%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[63.2,63.0,62.5,62.1,61.8,61.4,62.0,62.6,63.4,64.1,64.8,65.5]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[57,56,56,55,55,54,54,55,55,56,57,58]},
+    tableTitle:'Activity activation rate — by category (%)',
+    tableNote:'Full fiscal year (Feb – Jan) · Activation = activity used in ≥1 live workflow run in-period ÷ total activities configured',
+    tableRows:[
+      {label:'Overall activation rate',highlight:true,data:[63.2,63.0,62.5,62.1,61.8,61.4,62.0,62.6,63.4,64.1,64.8,65.5],fmt:'%'},
+      {label:'Messaging & Engagement',highlight:false,data:[78,77,77,76,76,75,75,76,77,78,79,80],fmt:'%'},
+      {label:'AI Agents',highlight:false,data:[71,70,69,68,68,67,68,69,70,71,72,73],fmt:'%'},
+      {label:'Screen & Assess',highlight:false,data:[68,67,67,66,65,65,65,66,67,68,69,70],fmt:'%'},
+      {label:'Interview Management',highlight:false,data:[61,60,59,59,58,57,58,59,60,61,62,63],fmt:'%'},
+      {label:'Compliance & Governance',highlight:false,data:[55,54,54,53,53,52,53,54,55,56,57,58],fmt:'%'},
+      {label:'Offer & Onboarding',highlight:false,data:[72,71,71,70,70,69,70,71,72,73,74,75],fmt:'%'},
+      {label:'Job Management',highlight:false,data:[49,48,48,47,47,46,47,48,49,50,51,52],fmt:'%'},
+    ],
+    notes:'Messaging & Engagement has the highest activation rate — recurring sends and personalization rules run continuously once activated. Job Management is lowest — many job-trigger activities are configured proactively for future job postings and sit dormant until a matching job is opened. AI Agent activation growing steadily as AI screening expands across enterprise customers. Screen & Assess subtypes show strong activation once workflows are live; gap reflects pre-configured-but-not-yet-live setups.',
+  },
+  {
+    id:9, deck:'ae', section:'AE — Platform Adoption', sectionShort:'Platform Adoption',
+    title:'Triggers — Live Workflow Coverage',
+    question:'How many triggers are configured and actively firing in live workflows?',
+    gap:false, isNew:false, isPhase2:true,
+    chartType:'line-cy-py', chartUnit:' K',
+    metricLabel:'Triggers in live workflows (K)', goalValue:null,
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[9.3,9.5,9.6,9.8,9.9,10.0,10.2,10.3,10.5,10.6,10.7,10.9]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[7.4,7.6,7.7,7.8,7.9,8.0,8.1,8.2,8.3,8.4,8.5,8.6]},
+    tableTitle:'Triggers — configured vs. active, by entity type',
+    tableNote:'Full fiscal year (Feb – Jan) · Active = trigger fired ≥1 run in live workflow in-period',
+    tableRows:[
+      {label:'Total configured',highlight:false,data:[10464,10693,10890,11110,11099,11285,11483,11682,11883,11872,12072,12273]},
+      {label:'Total active',highlight:true,data:[9310,9480,9620,9780,9910,10040,10180,10320,10460,10600,10740,10880]},
+      {label:'Job triggers — active',highlight:false,data:[2980,3030,3085,3130,3170,3210,3255,3305,3355,3400,3445,3490]},
+      {label:'Candidate triggers — active',highlight:false,data:[2610,2655,2695,2740,2775,2810,2850,2895,2935,2975,3015,3055]},
+      {label:'Screening triggers — active',highlight:false,data:[1680,1710,1730,1760,1785,1810,1835,1860,1890,1915,1940,1965]},
+      {label:'Interview triggers — active',highlight:false,data:[1240,1265,1285,1310,1325,1345,1365,1385,1410,1430,1450,1470]},
+      {label:'Onboarding triggers — active',highlight:false,data:[800,820,825,840,855,865,875,875,870,880,890,900]},
+    ],
+    secondaryTable:{
+      title:'Trigger activation rate — by entity type (%)',
+      note:'Full fiscal year (Feb – Jan) · Active triggers ÷ configured triggers per entity type',
+      tableRows:[
+        {label:'Overall activation rate',highlight:true,data:[89,89,88,88,89,89,89,88,88,89,89,89],fmt:'%'},
+        {label:'Job triggers',highlight:false,data:[91,91,90,90,91,91,91,90,90,91,91,91],fmt:'%'},
+        {label:'Candidate triggers',highlight:false,data:[93,93,92,92,93,93,93,92,92,93,93,93],fmt:'%'},
+        {label:'Screening triggers',highlight:false,data:[88,88,87,87,88,88,88,87,87,88,88,88],fmt:'%'},
+        {label:'Interview triggers',highlight:false,data:[86,86,85,85,86,86,86,85,85,86,86,86],fmt:'%'},
+        {label:'Onboarding triggers',highlight:false,data:[82,82,81,81,82,82,81,80,79,80,80,80],fmt:'%'},
+      ],
+    },
+    notes:'Overall trigger activation rate is stable at ~89% — healthy signal. Candidate triggers have the highest activation (93%) as candidate-event workflows fire continuously. Onboarding trigger activation is slightly lower and softening — driven by customers configuring onboarding triggers ahead of HCM go-live dates, leaving them dormant until integration is ready. Inactive triggers include: draft workflows not yet activated, paused workflows, and deprecated configs.',
+  },
+  {
+    id:10, deck:'ae', section:'AE — Platform Adoption', sectionShort:'Platform Adoption',
+    title:'Policies — Live Coverage',
+    question:'How many automation policies are live and actively governing workflow behavior?',
+    gap:false, isNew:false, isPhase2:true,
+    chartType:'line-cy-py', chartUnit:'',
+    metricLabel:'Total live policies configured', goalValue:null,
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[434,445,457,468,479,492,502,514,526,537,548,561]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[298,306,314,322,330,339,345,353,361,369,377,386]},
+    tableTitle:'Live policies — breakdown by use case',
+    tableRows:[
+      {label:'Total live policies',highlight:true,data:[434,445,457,468,479,492,502,514,526,537,548,561]},
+      {label:'Hiring automations',highlight:false,data:[248,255,262,268,275,282,288,295,302,308,315,322]},
+      {label:'Onboarding workflows',highlight:false,data:[136,138,142,145,148,152,155,158,162,165,168,172]},
+      {label:'Fraud detection agent',highlight:false,data:[50,52,53,55,56,58,59,61,62,64,65,67]},
+    ],
+    notes:'Fraud detection agent policies growing fastest (+3% MoM) as Capgemini and two additional enterprise customers expand coverage. Onboarding policy growth tracks customer count linearly — expected. Hiring automation is the primary volume driver.',
+  },
+  // ── AE SECTION 4 ──────────────────────────────────────────
+  {
+    id:11, deck:'ae', section:'AE — Scale & Volume', sectionShort:'Scale & Volume',
+    title:'Total Workflows',
+    question:'How many workflows are configured across the platform, and is the library expanding?',
+    gap:false, isNew:false,
+    chartType:'line-cy-py', chartUnit:' K',
+    metricLabel:'Total workflows (K)', goalValue:null,
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[6.8,7.0,7.1,7.2,7.3,7.4,7.6,7.7,7.8,7.9,8.0,8.2]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[4.8,4.9,5.0,5.0,5.1,5.2,5.3,5.4,5.5,5.6,5.7,5.8]},
+    tableTitle:'Workflows — configured, by use case',
+    tableNote:'Full fiscal year (Feb – Jan) · Total configured (incl. draft, paused, active)',
+    tableRows:[
+      {label:'Total workflows',highlight:true,data:[6840,6970,7090,7200,7320,7440,7560,7680,7800,7920,8040,8160]},
+      {label:'Avg. per live customer',highlight:false,data:[87,87,87,87,88,88,88,88,89,89,89,89]},
+      {label:'Hiring Automation',highlight:false,data:[2840,2887,2934,2980,3027,3074,3121,3168,3215,3262,3309,3360]},
+      {label:'Talent Engagement',highlight:false,data:[1480,1505,1530,1554,1579,1601,1625,1648,1673,1697,1720,1760]},
+      {label:'Talent Onboarding',highlight:false,data:[1200,1220,1240,1262,1282,1302,1322,1340,1360,1380,1400,1440]},
+      {label:'Offer Management',highlight:false,data:[720,733,746,760,773,786,800,813,827,840,853,860]},
+      {label:'Job Management',highlight:false,data:[600,625,640,644,659,677,692,711,725,741,758,740]},
+    ],
+    secondaryTable:{
+      title:'Active workflow ratio — by use case (%)',
+      note:'Full fiscal year (Feb – Jan) · Active = workflow triggered ≥1 run in-period ÷ total configured',
+      tableRows:[
+        {label:'Overall active ratio',highlight:true,data:[67,67,67,68,68,68,68,69,69,69,70,70],fmt:'%'},
+        {label:'Talent Engagement',highlight:false,data:[74,74,75,75,75,76,76,76,77,77,77,78],fmt:'%'},
+        {label:'Talent Onboarding',highlight:false,data:[92,92,92,92,92,92,93,93,93,93,93,93],fmt:'%'},
+        {label:'Hiring Automation',highlight:false,data:[70,70,70,71,71,71,71,72,72,72,73,74],fmt:'%'},
+        {label:'Offer Management',highlight:false,data:[55,55,55,56,56,56,56,57,57,57,58,58],fmt:'%'},
+        {label:'Job Management',highlight:false,data:[42,42,42,42,43,43,43,43,44,44,44,45],fmt:'%'},
+      ],
+    },
+    notes:'Workflow library growing at ~120/month. Hiring Automation is the largest category (41%). Talent Onboarding has the highest active ratio (92%) — onboarding workflows activate automatically on hire events with very few dormant configs. Job Management has the lowest active ratio (42%) — many workflows are pre-configured ahead of requisition opens and sit dormant until a matching job is created. Each new customer adds an average of ~16 workflows at onboarding.',
+  },
+  {
+    id:12, deck:'ae', section:'AE — Scale & Volume', sectionShort:'Scale & Volume',
+    title:'Hiring Automation — Workflow Depth',
+    question:'How sophisticated are hiring automation workflows — and where in the pipeline is depth highest?',
+    gap:true, isNew:false,
+    chartType:'line-cy-py', chartUnit:' actions',
+    metricLabel:'Avg. actions per active hiring workflow', goalValue:5, goalLabel:'Target: 5 actions',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[3.2,3.3,3.3,3.4,3.5,3.6,3.6,3.7,3.8,3.9,4.0,4.1]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[2.4,2.5,2.5,2.6,2.6,2.7,2.7,2.8,2.8,2.9,2.9,3.0]},
+    tableTitle:'Avg. actions per active workflow — by pipeline stage',
+    tableNote:'Full fiscal year (Feb – Jan) · Actions = configured steps within a workflow (triggers, conditions, sends, updates, branches)',
+    tableRows:[
+      {label:'Overall avg. actions / workflow',highlight:true,data:[3.2,3.3,3.3,3.4,3.5,3.6,3.6,3.7,3.8,3.9,4.0,4.1]},
+      {label:'Prequalification',highlight:false,data:[2.8,2.8,2.9,2.9,3.0,3.0,3.1,3.1,3.1,3.2,3.2,3.2]},
+      {label:'Screening',highlight:false,data:[3.1,3.2,3.2,3.3,3.4,3.4,3.5,3.5,3.6,3.7,3.7,3.8]},
+      {label:'Scheduling',highlight:false,data:[5.2,5.3,5.4,5.5,5.6,5.7,5.8,5.9,6.0,6.0,6.1,6.1]},
+      {label:'Assessment',highlight:false,data:[3.5,3.6,3.6,3.7,3.8,3.8,3.9,4.0,4.1,4.2,4.3,4.4]},
+    ],
+    notes:'DATA GAP: Per-workflow action count requires workflow-level schema instrumentation not yet exposed in reporting. Values shown are directional targets. Scheduling workflows are the most complex (avg. 6.1 actions) — calendar coordination, reminders, confirmation loops, and recruiter alerts each add steps. Prequalification is the simplest (avg. 3.2) and has the most headroom for deepening. YoY improvement (+1.1 actions avg.) indicates customers are building more sophisticated automation over time rather than just adding more workflows.',
+  },
+  {
+    id:13, deck:'ae', section:'AE — Scale & Volume', sectionShort:'Scale & Volume',
+    title:'Talent Onboarding — Workflow Depth [2nd Priority]',
+    question:'How sophisticated are onboarding workflows — and where in the journey is depth highest?',
+    gap:true, isNew:false,
+    chartType:'line-cy-py', chartUnit:' actions',
+    metricLabel:'Avg. actions per active onboarding workflow', goalValue:6, goalLabel:'Target: 6 actions',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[4.1,4.2,4.3,4.4,4.5,4.6,4.6,4.7,4.8,4.9,5.0,5.1]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[3.0,3.1,3.1,3.2,3.2,3.3,3.3,3.4,3.4,3.5,3.5,3.6]},
+    tableTitle:'Avg. actions per active workflow — by journey stage',
+    tableNote:'Full fiscal year (Feb – Jan) · Actions = configured steps within a workflow (triggers, conditions, sends, HCM field writes, branches)',
+    tableRows:[
+      {label:'Overall avg. actions / workflow',highlight:true,data:[4.1,4.2,4.3,4.4,4.5,4.6,4.6,4.7,4.8,4.9,5.0,5.1]},
+      {label:'Data capture',highlight:false,data:[3.2,3.3,3.3,3.4,3.4,3.5,3.5,3.6,3.6,3.7,3.7,3.8]},
+      {label:'Welcome & new hire journey',highlight:false,data:[4.0,4.1,4.1,4.2,4.3,4.3,4.4,4.4,4.5,4.6,4.7,4.8]},
+      {label:'HCM provisioning',highlight:false,data:[5.8,5.9,6.0,6.1,6.2,6.3,6.4,6.5,6.6,6.7,6.8,6.9]},
+    ],
+    notes:'DATA GAP: Per-workflow action count requires workflow-level schema instrumentation not yet exposed in reporting. Values shown are directional targets. HCM provisioning workflows are the most complex (avg. 6.9 actions by Jan) — field writes, conditional HCM routing, error-handling branches, and provisioning confirmations all contribute. Data capture is simplest (avg. 3.8) with room to deepen. Onboarding workflows are inherently more action-rich than hiring workflows — HCM field mapping requires more structured steps. YoY improvement (+1.5 actions avg.) reflects customers maturing their onboarding configuration over time.',
+  },
+  {
+    id:14, deck:'ae', section:'AE — Scale & Volume', sectionShort:'Scale & Volume',
+    title:'Total Runs',
+    question:'How many workflow runs is the Automation Engine executing per month — and which use cases are driving volume?',
+    gap:false, isNew:false,
+    chartType:'line-cy-py', chartUnit:' K',
+    metricLabel:'Total workflow runs (K)', goalValue:null,
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[498,520,498,510,525,540,555,568,580,592,605,618]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[342,358,342,351,362,372,383,392,401,410,420,430]},
+    tableTitle:'Total runs — by use case',
+    tableNote:'Full fiscal year (Feb – Jan) · Includes all run types: event-triggered, initiative (batch), and scheduled',
+    tableRows:[
+      {label:'Total runs',highlight:true,data:[498000,520000,498000,510000,525000,540000,555000,568000,580000,592000,605000,618000]},
+      {label:'Hiring Automation',highlight:false,data:[199000,208000,199000,204000,210000,216000,222000,227000,232000,237000,242000,247000]},
+      {label:'Talent Engagement',highlight:false,data:[149000,156000,149000,153000,158000,162000,167000,170000,174000,178000,182000,185000]},
+      {label:'Talent Onboarding',highlight:false,data:[75000,78000,75000,77000,79000,81000,83000,85000,87000,89000,91000,93000]},
+      {label:'Offer Management',highlight:false,data:[40000,42000,40000,41000,42000,43000,44000,45000,46000,47000,48000,49000]},
+      {label:'Job Management',highlight:false,data:[35000,36000,35000,35000,36000,38000,39000,41000,41000,41000,42000,44000]},
+    ],
+    notes:'Hiring Automation is the largest run volume driver at ~40% of total. Talent Engagement runs are high-frequency — recurring message sends fire at scale across candidate pipelines. Feb dip is seasonal (lower hiring activity). Total run volume growing ~120K/month YoY — reflecting both new customer onboarding and existing customers expanding automation coverage.',
+  },
+  {
+    id:15, deck:'ae', section:'AE — Scale & Volume', sectionShort:'Scale & Volume',
+    title:'Hiring Automation — Run Analysis',
+    question:'How are hiring automation runs distributed across job zones — and where is the engine doing the most work?',
+    gap:false, isNew:false,
+    chartType:'line-cy-py', chartUnit:' K',
+    metricLabel:'Hiring Automation runs (K)', goalValue:null,
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[199,208,199,204,210,216,222,227,232,237,242,247]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[137,143,137,140,145,149,153,157,160,164,168,172]},
+    tableTitle:'Hiring Automation runs — by Job Zone',
+    tableNote:'Full fiscal year (Feb – Jan) · Job Zone per O*NET classification · Includes all run types for hiring automation workflows',
+    tableRows:[
+      {label:'Total hiring automation runs',highlight:true,data:[199000,208000,199000,204000,210000,216000,222000,227000,232000,237000,242000,247000]},
+      {label:'Zone 1 — High-volume hourly',highlight:false,data:[70000,73000,70000,71000,74000,76000,78000,79000,81000,83000,85000,86000]},
+      {label:'Zone 2 — Semi-skilled operations',highlight:false,data:[50000,52000,50000,51000,53000,54000,56000,57000,58000,59000,61000,62000]},
+      {label:'Zone 3 — Skilled professional',highlight:false,data:[44000,46000,44000,45000,46000,48000,49000,50000,51000,52000,53000,54000]},
+      {label:'Zone 4 — Expert / management',highlight:false,data:[24000,25000,24000,24000,25000,26000,27000,27000,28000,28000,29000,30000]},
+      {label:'Zone 5 — Executive & specialized',highlight:false,data:[11000,12000,11000,13000,12000,12000,12000,14000,14000,15000,14000,15000]},
+    ],
+    notes:'Zone 1 (high-volume hourly) generates the most automation runs — high applicant throughput across retail, logistics, and manufacturing customers means every stage trigger fires at greater frequency. Zone 5 (executive) is lowest by volume but has the highest runs-per-active-workflow ratio — white-glove executive workflows are few but deeply orchestrated. Feb seasonal dip mirrors the total runs trend. Zone 3 and 4 are growing fastest in absolute terms, indicating expansion into mid-complexity professional hiring.',
+  },
+  // ── AE SECTION 5 ──────────────────────────────────────────
+  {
+    id:16, deck:'ae', section:'AE — Platform Health', sectionShort:'Platform Health',
+    title:'Platform Health — Error Analysis',
+    question:'How reliably is the Automation Engine executing, and where are errors concentrating?',
+    gap:true, isNew:false,
+    chartType:'line-cy-py', chartUnit:'%',
+    metricLabel:'Successful completion rate (%)', goalValue:99.9, goalLabel:'Target: 99.9%',
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[99.97,99.89,99.88,99.91,99.93,99.94,99.97,99.96,99.96,99.97,99.97,99.97]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[99.95,99.87,99.85,99.88,99.91,99.92,99.94,99.93,99.94,99.95,99.95,99.95]},
+    tableTitle:'Platform health — execution volumes',
+    tableRows:[
+      {label:'Total initiated runs',highlight:false,data:[498000,520000,498000,510000,525000,540000,555000,568000,580000,592000,605000,618000]},
+      {label:'Runs with errors (total)',highlight:false,data:[574,604,450,380,320,280,250,220,200,190,185,175]},
+      {label:'Runs completed after retry',highlight:false,data:[420,380,340,310,290,270,255,240,230,220,215,200]},
+      {label:'Dropouts due to errors',highlight:false,data:[154,224,110,70,30,10,8,7,6,5,5,5]},
+      {label:'Completion rate (%)',highlight:true,data:[99.97,99.89,99.88,99.91,99.93,99.94,99.97,99.96,99.96,99.97,99.97,99.97],fmt:'%'},
+      {label:'Unique error types (config)',highlight:false,data:[22,18,16,15,14,14,13,13,12,12,11,11]},
+      {label:'Unique error types (technical)',highlight:false,data:[55,52,50,48,46,45,44,43,42,41,40,39]},
+    ],
+    notes:'DATA GAP: Error taxonomy (config vs. technical vs. dependency) requires engineering instrumentation not yet available. Jul-Aug spike was a known Workday connector issue — patched in Q3. Completion rate stabilised above 99.9% goal.',
+  },
+  // ── AE SECTION 6 ──────────────────────────────────────────
+  {
+    id:17, deck:'ae', section:'AE — Programs', sectionShort:'Programs',
+    title:'Boot Camp Readiness',
+    question:'Are training and enablement programs addressing the most critical readiness gaps?',
+    gap:false, isNew:false,
+    chartType:'plain-table',
+    tableTitle:'Boot Camp readiness — feedback & mitigation tracker',
+    columns:['#','Feedback','Mitigation & actions','Status'],
+    rows:[
+      ['1','Scope vs. time: core modules risk running long; participants want more hands-on on triggers and policies.','Tighten day-1 agenda; convert one lecture block to async pre-read; add focused lab on triggers + policies with solution guide.','In progress'],
+      ['2','Lab stability: intermittent sandbox resets break flow during the capstone exercise.','Dedicated boot-camp tenant with frozen config for the week; dry-run checklist and on-call engineer during lab blocks.','On track'],
+      ['3','SME coverage: uneven depth on advanced error handling and retries across product areas.','Pair SMEs per module; shared slide + demo script; office hours calendar published pre–boot camp.','Planned'],
+      ['4','Success criteria: managers want a clearer pass/fail rubric tied to job tasks, not only lab completion.','Align rubric to three role-based scenarios; pilot with TA sign-off; publish rubric with sample answers in handbook.','Drafting'],
+    ],
+    notes:'Boot camp is the primary enablement lever for getting customers to real adoption status (≥10 active workflows + 30% job coverage). Prioritise fixing lab stability (item 2) — highest impact on completion rates.',
+  },
+  // ── AE LEGACY (reference only) ────────────────────────────
+  {
+    id:18, deck:'ae', section:'AE — Backlog / Old Slides', sectionShort:'Backlog / Old',
+    title:'Recruiter Hours Saved',
+    question:'How much recruiter time is automation recovering per month, and is the value compounding?',
+    gap:false, isNew:false, isOld:true,
+    chartType:'line-cy-py', chartUnit:'',
+    metricLabel:'Total recruiter hours saved / month', goalValue:null,
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[1200,1180,1215,1238,1255,1270,1265,1290,1305,1320,1340,1365]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[1050,1032,1064,1083,1098,1112,1107,1129,1141,1154,1172,1198]},
+    tableTitle:'Recruiter hours saved — monthly breakdown',
+    tableRows:[
+      {label:'Total recruiter hours saved',highlight:true,data:[1200,1180,1215,1238,1255,1270,1265,1290,1305,1320,1340,1365]},
+      {label:'Hiring automations',highlight:false,data:[864,854,883,891,908,922,911,933,948,950,969,991]},
+      {label:'Onboarding workflows',highlight:false,data:[336,326,332,347,347,348,354,357,357,370,371,374]},
+    ],
+    secondaryTable:{
+      title:'Estimated cost savings — monthly',
+      note:'Est. at $62.50 / hr blended recruiter cost · Full fiscal year (Feb – Jan)',
+      tableRows:[
+        {label:'Total est. cost saving ($K)',highlight:true,data:[75,74,76,77,78,79,79,81,82,82,84,85]},
+        {label:'Hiring automations ($K)',highlight:false,data:[54,53,55,56,57,58,57,58,59,59,61,62]},
+        {label:'Onboarding workflows ($K)',highlight:false,data:[21,20,21,22,22,22,22,22,22,23,23,23]},
+      ],
+    },
+    notes:'Legacy view — superseded by Automation Depth (Slide 4) and Automation Coverage (Slide 5). Retained for reference. Hours saved calculated from automation runs × avg. task duration avoided, calibrated with CS team.',
+  },
+  {
+    id:19, deck:'ae', section:'AE — Backlog / Old Slides', sectionShort:'Backlog / Old',
+    title:'Customer Adoption — Old View',
+    question:'How many customers are live on the Automation Engine, and is the customer base growing?',
+    gap:false, isNew:false, isOld:true,
+    chartType:'line-cy-py', chartUnit:'',
+    metricLabel:'Live customers on Automation Engine', goalValue:null,
+    currentYear: {label:'FY26 (Feb 25 – Jan 26)',data:[79,78,81,83,85,84,86,87,89,90,91,92]},
+    previousYear:{label:'FY25 (Feb 24 – Jan 25)',data:[58,57,60,62,64,63,65,66,68,69,70,71]},
+    tableTitle:'Live customers — breakdown',
+    tableRows:[
+      {label:'Total live customers on AE',highlight:true,data:[79,78,81,83,85,84,86,87,89,90,91,92]},
+      {label:'Hiring automations customers',highlight:false,data:[77,75,77,81,82,80,84,84,85,88,88,88]},
+      {label:'Onboarding workflow customers',highlight:false,data:[2,3,4,2,3,4,2,3,4,2,3,4]},
+    ],
+    notes:'Legacy view — superseded by Customer Base — Account Lifecycle (Slide 3). Retained for reference. Simple live customer count; replaced by full lifecycle view including active rate, go-lives, churn, and implementation pipeline.',
+  },
+];
+SLIDES.push(...AE_SLIDES);
+let currentIdx = 0;
+let activeChart = null;
+
+function buildNav() {
+  const nav = document.getElementById('slide-nav');
+  nav.innerHTML = '';
+  let lastSection = '';
+  deckSlides().forEach((s, i) => {
+    if (s.section !== lastSection) {
+      lastSection = s.section;
+      const lbl = document.createElement('div');
+      lbl.className = 'nav-section-label';
+      lbl.textContent = s.sectionShort;
+      nav.appendChild(lbl);
+    }
+    const item = document.createElement('div');
+    item.className = 'nav-item' + (i===0?' active':'');
+    item.id = 'nav-'+i;
+    item.onclick = () => goTo(i);
+    item.innerHTML = `<div class="nav-num">${s.id}</div><span>${s.title}</span>${s.gap?'<div class="nav-gap-dot" title="Data gap"></div>':''}${s.isPhase2?'<div class="nav-phase2-dot" title="Phase 2"></div>':''}`;
+    nav.appendChild(item);
+  });
+}
+
+function navigate(dir) { goTo(Math.max(0, Math.min(deckSlides().length-1, currentIdx+dir))); }
+
+function goTo(idx) {
+  document.querySelector('.nav-item.active')?.classList.remove('active');
+  currentIdx = idx;
+  document.getElementById('nav-'+idx)?.classList.add('active');
+  document.getElementById('nav-'+idx)?.scrollIntoView({block:'nearest'});
+  render();
+  if (sb) { subscribeToSlide(globalSlideId()); loadAllSectionCounts(); }
+}
+
+function render() {
+  const slides = deckSlides();
+  const s = slides[currentIdx];
+  document.getElementById('tb-section').textContent = s.sectionShort;
+  document.getElementById('tb-title').textContent = `Slide ${s.id} — ${s.title}`;
+  document.getElementById('slide-counter').textContent = `${currentIdx+1} / ${slides.length}`;
+  document.getElementById('btn-prev').disabled = currentIdx===0;
+  document.getElementById('btn-next').disabled = currentIdx===slides.length-1;
+
+  const body = document.getElementById('slide-body');
+  body.innerHTML = '';
+
+  const meta = document.createElement('div');
+  meta.className = 'slide-meta';
+  meta.innerHTML = `<span class="badge badge-section">${s.sectionShort}</span>`;
+  if (s.isNew) meta.innerHTML += `<span class="badge badge-new">New Metric</span>`;
+  if (s.isOld) meta.innerHTML += `<span class="badge badge-old">Legacy — for reference</span>`;
+  if (s.isPhase2) meta.innerHTML += `<span class="badge badge-phase2">Phase 2</span>`;
+  if (s.gap) meta.innerHTML += `<span class="badge badge-gap">Data Gap</span>`;
+  body.appendChild(meta);
+
+  const q = document.createElement('div');
+  q.className = 'slide-question';
+  q.textContent = s.question;
+  body.appendChild(q);
+
+  if (s.notes) {
+    const nb = document.createElement('div');
+    nb.className = 'note-box';
+    nb.textContent = s.notes;
+    body.appendChild(nb);
+  }
+
+  if (s.chartType === 'line-cy-py') renderCYPYCard(body, s);
+  else if (s.chartType === 'stacked-area') renderStackedAreaCard(body, s);
+  else if (s.chartType === 'stacked-bar') renderStackedBarCard(body, s);
+  else if (s.chartType === 'jtbd') renderJTBD(body, s);
+  else if (s.chartType === 'defects' || s.chartType === 'sr') renderDefectsCard(body, s);
+  else if (s.chartType === 'exec-summary') renderExecSummary(body, s);
+  else if (s.chartType === 'three-blocks') renderThreeBlocks(body, s);
+  else if (s.chartType === 'plain-table') renderPlainTable(body, s);
+  const chartEl = body.querySelector('.card');
+  if (chartEl) wrapSection(chartEl, 'chart');
+
+  let tableIdx = 0;
+  if (s.chartType === 'jtbd') { renderJTBDTable(body, s); tableIdx++; }
+  else if (s.tableRows) { renderTable(body, s); tableIdx++; }
+  if (s.secondaryTable && s.secondaryTable.tableRows) {
+    renderTable(body, {
+      tableRows: s.secondaryTable.tableRows,
+      tableTitle: s.secondaryTable.title || 'Breakdown',
+      tableNote: s.secondaryTable.note != null ? s.secondaryTable.note : '',
+      cohortCols: s.secondaryTable.cohortCols || false,
+      cohortLabels: s.secondaryTable.cohortLabels || [],
+    });
+    tableIdx++;
+  }
+  if (s.tertiaryTable && s.tertiaryTable.tableRows) {
+    renderTable(body, {
+      tableRows: s.tertiaryTable.tableRows,
+      tableTitle: s.tertiaryTable.title || 'Breakdown',
+      tableNote: s.tertiaryTable.note != null ? s.tertiaryTable.note : '',
+      cohortCols: s.tertiaryTable.cohortCols || false,
+      cohortLabels: s.tertiaryTable.cohortLabels || [],
+    });
+    tableIdx++;
+  }
+  body.querySelectorAll('.tcard').forEach((tc, i) => {
+    wrapSection(tc, 'table-' + (i + 1));
+  });
+}
+
+// ─── CHART HELPERS ───────────────────────────────────────────
+function makeChart(canvas, config) {
+  if (activeChart) { activeChart.destroy(); activeChart = null; }
+  activeChart = new Chart(canvas.getContext('2d'), config);
+  return activeChart;
+}
+
+function chartCard(parent, metricLabel, goalLabel) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<div class="card-header"><span class="card-title">${metricLabel}</span>${goalLabel?`<span class="card-goal">${goalLabel}</span>`:''}</div><div class="card-body"><div class="chart-wrap"><canvas id="main-chart"></canvas></div><div id="chart-legend" class="legend"></div></div>`;
+  parent.appendChild(card);
+  return card;
+}
+
+function renderCYPYCard(parent, s) {
+  chartCard(parent, s.metricLabel, s.goalLabel||null);
+  const canvas = document.getElementById('main-chart');
+  const u = s.chartUnit != null ? s.chartUnit : '%';
+  const datasets = [];
+  if (s.goalValue != null) {
+    datasets.push({label:'Goal',data:Array(12).fill(s.goalValue),borderColor:C.goal,borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false,datalabels:{display:false}});
+  }
+  datasets.push({
+    label:s.currentYear.label, data:s.currentYear.data,
+    borderColor:C.currentYear, borderWidth:2.5, pointRadius:3.5,
+    pointBackgroundColor:C.currentYear, fill:false, tension:0.25,
+    datalabels:{display:true,align:'top',offset:5,color:C.heading,font:{size:9.5,weight:'600',family:'Poppins'},formatter:(v)=>typeof v==='number'?(v%1===0?v+u:v.toFixed(1)+u):''}
+  });
+  datasets.push({
+    label:s.previousYear.label, data:s.previousYear.data,
+    borderColor:C.previousYear, borderDash:[5,4], borderWidth:1.5, pointRadius:2.5,
+    pointBackgroundColor:C.previousYear, fill:false, tension:0.25,
+    datalabels:{display:false}
+  });
+  const opts = (u !== '%') ? lineRawOpts(u) : lineOpts();
+  makeChart(canvas, {type:'line',data:{labels:MONTHS,datasets},options:opts});
+  const legend = document.getElementById('chart-legend');
+  legend.innerHTML = '';
+  if (s.goalValue != null) {
+    legend.innerHTML += `<div class="legend-item"><div class="ll" style="background:transparent;border-top:2px dashed ${C.goal};height:0;margin-top:1px"></div><span>Goal</span></div>`;
+  }
+  legend.innerHTML += `<div class="legend-item"><div class="ll" style="background:${C.currentYear}"></div><span>${s.currentYear.label}</span></div>`;
+  legend.innerHTML += `<div class="legend-item"><div class="ll" style="background:transparent;border-top:2px dashed ${C.previousYear};height:0;margin-top:1px"></div><span>${s.previousYear.label}</span></div>`;
+}
+
+function renderStackedAreaCard(parent, s) {
+  chartCard(parent, s.metricLabel, null);
+  const canvas = document.getElementById('main-chart');
+  const datasets = s.stackSeries.map(sr => ({
+    label:sr.label,data:sr.data,borderColor:sr.color,backgroundColor:sr.color+'cc',borderWidth:1,fill:true,tension:0.3,pointRadius:2,datalabels:{display:false}
+  }));
+  makeChart(canvas, {type:'line',data:{labels:MONTHS,datasets},options:{
+    ...lineOpts(),scales:{x:{grid:{display:false},ticks:{font:{size:10.5,family:'Poppins'}}},y:{stacked:true,min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10.5,family:'Poppins'}},grid:{color:'#F1F5F9'}}},
+    plugins:{legend:{display:false},datalabels:{display:false}}
+  }});
+  const legend = document.getElementById('chart-legend');
+  legend.innerHTML = '';
+  s.stackSeries.forEach(sr => { legend.innerHTML += `<div class="legend-item"><div class="ll" style="background:${sr.color}"></div><span>${sr.label}</span></div>`; });
+}
+
+function renderStackedBarCard(parent, s) {
+  chartCard(parent, s.metricLabel, null);
+  const canvas = document.getElementById('main-chart');
+  const datasets = s.stackSeries.map(sr => ({label:sr.label,data:sr.data,backgroundColor:sr.color,borderRadius:0,datalabels:{display:false}}));
+  makeChart(canvas, {type:'bar',data:{labels:MONTHS,datasets},options:{
+    ...barOpts(),scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10.5,family:'Poppins'}}},y:{stacked:true,min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10.5,family:'Poppins'}},grid:{color:'#F1F5F9'}}},
+    plugins:{legend:{display:false},datalabels:{display:false}}
+  }});
+  const legend = document.getElementById('chart-legend');
+  legend.innerHTML = '';
+  s.stackSeries.forEach(sr => { legend.innerHTML += `<div class="legend-item"><div class="ll" style="background:${sr.color}"></div><span>${sr.label}</span></div>`; });
+}
+
+function renderJTBD(parent, s) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `<div class="card-header"><span class="card-title">${s.metricLabel}</span><span class="card-goal">Breakdown: Total / 1-way / 2-way / Phenom Hire</span></div>`;
+  const wrap = document.createElement('div');
+  wrap.className = 'jtbd-wrap';
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;gap:12px;padding:8px 20px 4px;border-bottom:1px solid #F1F5F9;';
+  hdr.innerHTML = `<span style="width:200px;font-size:11px;color:#7A818C;font-weight:600">STAGE</span><span style="flex:1;font-size:11px;color:#7A818C;font-weight:600">TOTAL vs GOAL</span><span style="width:40px;font-size:11px;color:#7A818C;font-weight:600;text-align:right">TOTAL</span>`;
+  wrap.appendChild(hdr);
+  s.stageData.forEach(st => {
+    const row = document.createElement('div');
+    row.className = 'jtbd-row';
+    const fillPct = Math.min(st.total, 100);
+    const statusColor = st.total >= st.goal ? C.emerald : st.total >= st.goal*0.9 ? C.amber : C.red;
+    row.innerHTML = `<span class="jtbd-label">${st.name}</span><div class="jtbd-bar-outer"><div class="jtbd-bar" style="width:${fillPct}%;background:${statusColor}"></div><div class="jtbd-goal-line" style="left:${st.goal}%" data-label="Goal ${st.goal}%"></div></div><span class="jtbd-pct" style="color:${statusColor}">${st.total}%</span>`;
+    wrap.appendChild(row);
+  });
+  card.appendChild(wrap);
+  parent.appendChild(card);
+}
+
+function renderDefectsCard(parent, s) {
+  const isSR = s.chartType === 'sr';
+  const tabCard = document.createElement('div');
+  tabCard.className = 'card';
+  const tabBar = document.createElement('div');
+  tabBar.style.cssText = 'display:flex;gap:0;border-bottom:1px solid #e2e8f0;padding:0 16px;';
+  s.tabs.forEach((t,i) => {
+    const tab = document.createElement('button');
+    tab.style.cssText = `padding:10px 16px;font-size:13px;font-weight:${i===s.activeTab?600:500};font-family:'Poppins',sans-serif;color:${i===s.activeTab?C.accent:C.muted};cursor:pointer;border:none;background:transparent;border-bottom:${i===s.activeTab?'2px solid '+C.accent:'2px solid transparent'};margin-bottom:-1px;transition:all 0.15s;letter-spacing:0.1px`;
+    tab.textContent = t;
+    tab.onclick = () => { s.activeTab=i; goTo(currentIdx); };
+    tabBar.appendChild(tab);
+  });
+  tabCard.appendChild(tabBar);
+  const td = s.tabData[s.activeTab];
+  const body = document.createElement('div');
+  body.className = 'card-body';
+  body.innerHTML = `<div class="chart-wrap"><canvas id="main-chart"></canvas></div><div id="chart-legend" class="legend"></div>`;
+  tabCard.appendChild(body);
+  parent.appendChild(tabCard);
+
+  const canvas = document.getElementById('main-chart');
+  const datasets = td.stacks.map(st => ({label:st.label,data:st.data,backgroundColor:st.color,datalabels:{display:false}}));
+  if (!isSR && td.sla) {
+    datasets.push({type:'line',label:'SLA compliance (%)',data:td.sla,borderColor:C.heading,borderWidth:2,pointRadius:2.5,fill:false,yAxisID:'y2',datalabels:{display:true,align:'top',offset:3,color:C.heading,font:{size:9,weight:'600',family:'Poppins'},formatter:v=>v+'%'}});
+  }
+  makeChart(canvas, {type:'bar',data:{labels:MONTHS,datasets},options:{
+    responsive:true,maintainAspectRatio:true,
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10.5,family:'Poppins'}}},y:{stacked:true,ticks:{font:{size:10.5,family:'Poppins'}},grid:{color:'#F1F5F9'}},...(!isSR&&td.sla?{y2:{position:'right',min:80,max:100,ticks:{callback:v=>v+'%',font:{size:10.5,family:'Poppins'}},grid:{display:false}}}:{})},
+    plugins:{legend:{display:false},datalabels:{display:true}}
+  }});
+  const legend = document.getElementById('chart-legend');
+  legend.innerHTML = '';
+  td.stacks.forEach(st => { legend.innerHTML += `<div class="legend-item"><div class="ll" style="background:${st.color}"></div><span>${st.label}</span></div>`; });
+  if (!isSR) legend.innerHTML += `<div class="legend-item"><div class="ll" style="background:${C.heading}"></div><span>SLA compliance (right axis)</span></div>`;
+}
+
+// ─── TABLE RENDER ────────────────────────────────────────────
+function renderTable(parent, s) {
+  const isCohort = s.cohortCols === true;
+  const cols = isCohort ? s.cohortLabels : MONTHS;
+  const idxs = isCohort ? s.cohortLabels.map((_, i) => i) : MONTH_IDX;
+
+  const tc = document.createElement('div');
+  tc.className = 'tcard';
+  const defaultNote = isCohort ? 'By cohort' : 'Full fiscal year (Feb – Jan)';
+  const note = s.tableNote != null && s.tableNote !== '' ? s.tableNote : defaultNote;
+  const ttitle = s.tableTitle || 'Data Table';
+  tc.innerHTML = `<div class="tcard-head"><span class="tcard-title">${ttitle}</span><span class="tcard-note">${note}</span></div>`;
+  let html = `<div class="tbl-wrap"><table class="tbl"${isCohort?' style="min-width:0"':''}><thead><tr><th></th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  s.tableRows.forEach(row => {
+    html += `<tr class="${row.highlight?'hl':''}"><td>${row.label}</td>`;
+    if (row.dataByCol) {
+      html += idxs.map(i=>`<td>${fmtTableVal(row.dataByCol[i], row.fmt)}</td>`).join('');
+    } else if (row.data) {
+      html += idxs.map(i=>`<td>${fmtTableVal(row.data[i], row.fmt)}</td>`).join('');
+    } else {
+      html += cols.map(()=>`<td class="ph">-</td>`).join('');
+    }
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div>`;
+  tc.innerHTML += html;
+  parent.appendChild(tc);
+}
+
+function renderJTBDTable(parent, s) {
+  const tc = document.createElement('div');
+  tc.className = 'tcard';
+  tc.innerHTML = `<div class="tcard-head"><span class="tcard-title">Stage Breakdown by Integration Type</span><span class="tcard-note">Latest month — % of engaged users active in each stage</span></div>`;
+  let html = `<table class="tbl"><thead><tr><th>JTBD Stage</th><th>1-way</th><th>2-way</th><th>Phenom Hire</th><th>Total</th><th>Goal</th></tr></thead><tbody>`;
+  s.tableRows.forEach(row => {
+    html += `<tr><td>${row.label}</td><td>${row.oneway}</td><td>${row.twoway}</td><td>${row.phire}</td><td><strong>${row.total}</strong></td><td style="color:#7A818C">${row.goal}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+  tc.innerHTML += html;
+  parent.appendChild(tc);
+}
+
+// ─── CHART OPTIONS ───────────────────────────────────────────
+function lineOpts() {
+  return {
+    responsive:true, maintainAspectRatio:true,
+    interaction:{mode:'index',intersect:false},
+    scales:{
+      x:{grid:{display:false},ticks:{font:{size:10.5,family:'Poppins',weight:'500'},color:C.muted}},
+      y:{min:0,ticks:{callback:v=>v+'%',font:{size:10.5,family:'Poppins',weight:'500'},color:C.muted},grid:{color:'#F1F5F9'}}
+    },
+    plugins:{legend:{display:false},datalabels:{display:true},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y}%`}}}
+  };
+}
+
+function barOpts() {
+  return {
+    responsive:true, maintainAspectRatio:true,
+    scales:{
+      x:{grid:{display:false},ticks:{font:{size:10.5,family:'Poppins',weight:'500'},color:C.muted}},
+      y:{ticks:{callback:v=>v+'%',font:{size:10.5,family:'Poppins',weight:'500'},color:C.muted},grid:{color:'#F1F5F9'}}
+    },
+    plugins:{legend:{display:false},datalabels:{display:true}}
+  };
+}
+
+function lineRawOpts(unit) {
+  const u = unit || '';
+  return {
+    responsive:true, maintainAspectRatio:true,
+    interaction:{mode:'index',intersect:false},
+    scales:{
+      x:{grid:{display:false},ticks:{font:{size:10.5,family:'Poppins',weight:'500'},color:C.muted}},
+      y:{min:0,ticks:{callback:v=>v+u,font:{size:10.5,family:'Poppins',weight:'500'},color:C.muted},grid:{color:'#F1F5F9'}}
+    },
+    plugins:{legend:{display:false},datalabels:{display:true},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y}${u}`}}}
+  };
+}
+
+// ─── AE LAYOUT RENDERERS ─────────────────────────────────────
+function renderExecSummary(parent, s) {
+  const grid = document.createElement('div');
+  grid.className = 'exec-grid';
+  s.metrics.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'exec-card';
+    if (m.rows) {
+      let html = `<div class="exec-card-title">${m.cardTitle}</div>`;
+      m.rows.forEach(r => {
+        html += `<div class="exec-row"><span class="exec-row-label">${r.label}</span><div class="exec-row-vals"><span class="exec-val">${r.value}</span><span class="exec-delta exec-${r.tone}">${r.delta}</span></div></div>`;
+      });
+      card.innerHTML = html;
+    } else {
+      card.className += ' exec-single-card';
+      card.innerHTML = `<div class="exec-delta-label">${m.label}</div><div class="exec-val-large">${m.value}</div><div class="exec-delta exec-${m.tone}">${m.delta}</div>`;
+    }
+    grid.appendChild(card);
+  });
+  parent.appendChild(grid);
+  wrapSection(grid, 'exec');
+}
+
+function renderThreeBlocks(parent, s) {
+  const grid = document.createElement('div');
+  grid.className = 'three-blocks';
+  const variants = {
+    highlights:{bg:'#ECFDF5',border:'#a7f3d0',titleColor:'#065F46'},
+    lowlights:{bg:'#FEF2F2',border:'#fecaca',titleColor:'#991b1b'},
+    support:{bg:'#FFF7ED',border:'#fed7aa',titleColor:'#92400E'},
+  };
+  s.blocks.forEach(b => {
+    const v = variants[b.variant] || {bg:'white',border:'#e2e8f0',titleColor:'#27282C'};
+    const card = document.createElement('div');
+    card.className = 'block-card';
+    card.style.cssText = `background:${v.bg};border-color:${v.border}`;
+    card.innerHTML = `<div class="block-card-title" style="color:${v.titleColor}">${b.title}</div><ul class="block-bullets">${b.bullets.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+    grid.appendChild(card);
+  });
+  parent.appendChild(grid);
+  wrapSection(grid, 'hlr');
+}
+
+function renderPlainTable(parent, s) {
+  const tc = document.createElement('div');
+  tc.className = 'tcard';
+  tc.innerHTML = `<div class="tcard-head"><span class="tcard-title">${s.tableTitle||s.title}</span><span class="tcard-note"></span></div>`;
+  let html = `<div class="tbl-wrap"><table class="tbl" style="min-width:0"><thead><tr>${s.columns.map((c,i)=>`<th${i===0?' style="text-align:left"':''}>${c}</th>`).join('')}</tr></thead><tbody>`;
+  s.rows.forEach(row => {
+    html += `<tr>${row.map((cell,i)=>`<td${i===0?' style="text-align:left"':''}>${cell}</td>`).join('')}</tr>`;
+  });
+  html += '</tbody></table></div>';
+  tc.innerHTML += html;
+  parent.appendChild(tc);
+}
+
+buildNav();
+render();
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+});
+
+// ─────────────────────────────────────────────────────────────
+// SUPABASE + SECTION-ANCHORED FEEDBACK
+// ─────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://myomsydokzycuqlsttpy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15b21zeWRva3p5Y3VxbHN0dHB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjQzMzksImV4cCI6MjA4OTk0MDMzOX0.qwbI9lneZwxOyNEzUJW5TVJpYb2av6Y-gGpaIr3bZbQ';
+
+let sb = null;
+let realtimeChannel = null;
+
+function initSupabase() {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  subscribeToSlide(currentIdx);
+  loadAllSectionCounts();
+}
+
+// ── Wrap an element with a comment pill + thread ──
+function wrapSection(el, sectionKey) {
+  const wrap = document.createElement('div');
+  wrap.className = 'section-wrap';
+  wrap.dataset.sectionKey = sectionKey;
+  el.parentNode.insertBefore(wrap, el);
+  wrap.appendChild(el);
+
+  const pill = document.createElement('button');
+  pill.className = 'section-comment-pill';
+  pill.dataset.sectionKey = sectionKey;
+  pill.innerHTML = `<span class="pill-icon">💬</span> <span class="pill-label">+ Add</span>`;
+  pill.onclick = () => toggleThread(sectionKey);
+  wrap.appendChild(pill);
+
+  const thread = document.createElement('div');
+  thread.className = 'section-thread';
+  thread.id = 'thread-' + sectionKey;
+  thread.innerHTML = `
+    <div class="section-thread-label">Feedback</div>
+    <div class="thread-items"></div>
+    <div class="thread-form">
+      <input class="thread-name" placeholder="Name" maxlength="60" value="${esc(localStorage.getItem('wbr_reviewer')||'')}" />
+      <textarea class="thread-text" placeholder="What's unclear or needs clarification?"></textarea>
+      <button onclick="submitSectionComment('${sectionKey}')">Post</button>
+    </div>`;
+  wrap.after(thread);
+}
+
+function toggleThread(sectionKey) {
+  const thread = document.getElementById('thread-' + sectionKey);
+  if (!thread) return;
+  const isOpen = thread.classList.toggle('open');
+  if (isOpen) loadSectionComments(sectionKey);
+}
+
+// ── Load comments for one section ──
+async function loadSectionComments(sectionKey, showResolved) {
+  if (!sb) return;
+  const thread = document.getElementById('thread-' + sectionKey);
+  if (!thread) return;
+  const items = thread.querySelector('.thread-items');
+  items.innerHTML = '<div class="thread-empty">Loading…</div>';
+  let query = sb.from('feedback')
+    .select('id, reviewer, comment, created_at, resolved')
+    .eq('slide_id', globalSlideId())
+    .eq('section_key', sectionKey)
+    .order('created_at', { ascending: true });
+  if (!showResolved) query = query.or('resolved.is.null,resolved.eq.false');
+  const { data, error } = await query;
+  if (error) { items.innerHTML = '<div class="thread-empty">Could not load comments.</div>'; return; }
+
+  const { count: resolvedCount } = await sb.from('feedback')
+    .select('*', { count: 'exact', head: true })
+    .eq('slide_id', globalSlideId()).eq('section_key', sectionKey).eq('resolved', true);
+
+  renderThreadItems(items, data || [], sectionKey, showResolved, resolvedCount || 0);
+}
+
+function renderThreadItems(container, rows, sectionKey, showingResolved, resolvedCount) {
+  let html = '';
+  if (resolvedCount > 0) {
+    html += `<button class="thread-toggle-resolved" onclick="loadSectionComments('${sectionKey}', ${!showingResolved})">${showingResolved ? 'Hide' : 'Show'} ${resolvedCount} resolved</button>`;
+  }
+  if (!rows.length) {
+    html += '<div class="thread-empty">No open feedback — be the first.</div>';
+    container.innerHTML = html;
+    return;
+  }
+  html += rows.map(r => {
+    const resolved = r.resolved === true;
+    const opacity = resolved ? 'opacity:0.5;' : '';
+    return `<div class="thread-item" style="${opacity}"><div class="thread-item-header"><span class="thread-author">${esc(r.reviewer)}${resolved?' <span style="color:#10b981;font-weight:500;font-size:10px">resolved</span>':''}</span><span class="thread-time">${relTime(r.created_at)}</span></div><div class="thread-text">${esc(r.comment)}</div>${!resolved?`<div class="thread-item-actions"><button class="resolve-btn" onclick="resolveComment('${r.id}','${sectionKey}',${showingResolved})">Resolve</button></div>`:''}</div>`;
+  }).join('');
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+async function resolveComment(id, sectionKey, showingResolved) {
+  if (!sb) return;
+  await sb.from('feedback').update({ resolved: true }).eq('id', id);
+  loadSectionComments(sectionKey, showingResolved);
+  updatePillCount(sectionKey);
+}
+
+// ── Submit a comment to a section ──
+async function submitSectionComment(sectionKey) {
+  if (!sb) return;
+  const thread = document.getElementById('thread-' + sectionKey);
+  if (!thread) return;
+  const nameInput = thread.querySelector('.thread-name');
+  const textInput = thread.querySelector('.thread-text');
+  const btn = thread.querySelector('.thread-form button');
+  const name = nameInput.value.trim();
+  const text = textInput.value.trim();
+  if (!name || !text) return;
+  btn.disabled = true; btn.textContent = 'Posting…';
+  localStorage.setItem('wbr_reviewer', name);
+  const s = deckSlides()[currentIdx];
+  const { error } = await sb.from('feedback').insert({
+    slide_id: globalSlideId(),
+    slide_title: `${s.id} — ${s.title}`,
+    reviewer: name,
+    comment: text,
+    section_key: sectionKey,
+  });
+  btn.disabled = false; btn.textContent = 'Post';
+  if (!error) {
+    textInput.value = '';
+    loadSectionComments(sectionKey);
+    updatePillCount(sectionKey);
+  }
+}
+
+// ── Load comment counts for all pills on current slide (open only) ──
+async function loadAllSectionCounts() {
+  if (!sb) return;
+  const { data, error } = await sb
+    .from('feedback')
+    .select('section_key, resolved')
+    .eq('slide_id', globalSlideId());
+  if (error || !data) return;
+  const counts = {};
+  data.forEach(r => { if (!r.resolved) counts[r.section_key] = (counts[r.section_key] || 0) + 1; });
+  document.querySelectorAll('.section-comment-pill').forEach(pill => {
+    const key = pill.dataset.sectionKey;
+    const n = counts[key] || 0;
+    pill.querySelector('.pill-label').textContent = n > 0 ? `${n} open` : '+ Add';
+    pill.classList.toggle('has-comments', n > 0);
+  });
+}
+
+async function updatePillCount(sectionKey) {
+  if (!sb) return;
+  const { count } = await sb.from('feedback').select('*', { count: 'exact', head: true })
+    .eq('slide_id', globalSlideId()).eq('section_key', sectionKey).or('resolved.is.null,resolved.eq.false');
+  const pill = document.querySelector(`.section-comment-pill[data-section-key="${sectionKey}"]`);
+  if (!pill) return;
+  const n = count || 0;
+  pill.querySelector('.pill-label').textContent = n > 0 ? `${n} open` : '+ Add';
+  pill.classList.toggle('has-comments', n > 0);
+}
+
+// ── Real-time ──
+function subscribeToSlide(globalId) {
+  if (realtimeChannel) { sb && sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+  if (!sb) return;
+  realtimeChannel = sb.channel('slide-' + globalId)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'feedback', filter: `slide_id=eq.${globalId}` }, payload => {
+      const row = payload.new;
+      const thread = document.getElementById('thread-' + row.section_key);
+      if (thread && thread.classList.contains('open')) {
+        const items = thread.querySelector('.thread-items');
+        const empty = items.querySelector('.thread-empty');
+        if (empty) empty.remove();
+        items.insertAdjacentHTML('beforeend',
+          `<div class="thread-item"><div class="thread-item-header"><span class="thread-author">${esc(row.reviewer)}</span><span class="thread-time">just now</span></div><div class="thread-text">${esc(row.comment)}</div></div>`
+        );
+      }
+      updatePillCount(row.section_key);
+    })
+    .subscribe();
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function relTime(iso) {
+  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (s < 60)    return 'just now';
+  if (s < 3600)  return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+initSupabase();
+</script>
+</body>
+</html>

@@ -4,10 +4,12 @@ Builds Phenom Weekly/Monthly Business Review (WBR/MBR) HTML decks that match the
 
 ## Install (consume this skill)
 
+**Repo:** https://github.com/venkatagonella/mbr-report
+
 ### Option A — personal skills (all projects)
 
 ```bash
-git clone <REPO_CLONE_URL> ~/.cursor/skills/mbr-report
+git clone https://github.com/venkatagonella/mbr-report.git ~/.cursor/skills/mbr-report
 ```
 
 If the folder already exists, update instead:
@@ -20,10 +22,17 @@ cd ~/.cursor/skills/mbr-report && git pull
 
 ```bash
 mkdir -p .cursor/skills
-git clone <REPO_CLONE_URL> .cursor/skills/mbr-report
+git clone https://github.com/venkatagonella/mbr-report.git .cursor/skills/mbr-report
 ```
 
 Restart Cursor or start a new agent chat after installing. Trigger by asking for an **MBR**, **WBR**, or **business review deck**.
+
+### Cursor Origin (Phenom team)
+
+Internal copy for teammates on Cursor Origin:
+
+- https://cursor.com/codebase/phenom-chatbot/mbr-report
+- Clone: `https://origin.cursor.com/phenom-chatbot/mbr-report.git`
 
 ## What’s inside
 
